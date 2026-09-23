@@ -1,16 +1,28 @@
 import { useEffect, useState } from 'react'
 import ClassList from './components/ClassList.jsx'
 import ClassView from './components/ClassView.jsx'
+import SectionView from './components/SectionView.jsx'
 import PinModal from './components/PinModal.jsx'
-import { loadLocalClasses, saveLocalClasses, clearLocalClasses } from './storage.js'
+import {
+  loadLocalClasses,
+  saveLocalClasses,
+  clearLocalClasses,
+  loadLocalSections,
+  saveLocalSections,
+  clearLocalSections,
+} from './storage.js'
 import {
   fetchClasses,
+  fetchAllSectionItems,
   createClass as apiCreateClass,
   removeClass as apiRemoveClass,
   addProject as apiAddProject,
   deleteProject as apiDeleteProject,
+  addSectionItem as apiAddSectionItem,
+  removeSectionItem as apiRemoveSectionItem,
   migrateLocalClasses,
 } from './api.js'
+import { SECTIONS } from './sections.js'
 import './index.css'
 
 const GRADES = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12']
@@ -18,23 +30,31 @@ const LETTERS = ['ա', 'բ', 'գ', 'դ', 'ե', 'զ']
 
 export default function App() {
   const [classes, setClasses] = useState(loadLocalClasses)
-  const [selectedId, setSelectedId] = useState(null)
+  const [sectionItems, setSectionItems] = useState(loadLocalSections)
+  const [route, setRoute] = useState({ view: 'home' }) // { view:'home' } | { view:'classes', id? } | { view:'section', key }
   const [pinAction, setPinAction] = useState(null) // 'create' | { type: 'remove', id }
   const [showCreate, setShowCreate] = useState(false)
   const [grade, setGrade] = useState('10')
   const [letter, setLetter] = useState('ա')
   const [newDesc, setNewDesc] = useState('')
-  const [cloud, setCloud] = useState(false) // true = connected to Supabase
+  const [cloud, setCloud] = useState(false)
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState('')
 
-  const selected = classes.find((c) => c.id === selectedId) || null
+  const selected = classes.find((c) => c.id === route.id) || null
 
-  // Local-only mutation (offline fallback) — also persists to localStorage
   const mutateLocal = (fn) => {
     setClasses((prev) => {
       const next = fn(prev)
       saveLocalClasses(next)
+      return next
+    })
+  }
+
+  const mutateLocalSections = (fn) => {
+    setSectionItems((prev) => {
+      const next = fn(prev)
+      saveLocalSections(next)
       return next
     })
   }
@@ -46,7 +66,6 @@ export default function App() {
         const remote = await fetchClasses()
         if (cancelled) return
 
-        // One-time migration: push local classes up if the cloud is empty
         const local = loadLocalClasses()
         if (remote.length === 0 && local.length > 0) {
           setBusy(true)
@@ -72,8 +91,18 @@ export default function App() {
           setClasses(remote)
           setCloud(true)
         }
+
+        // Load section items too — sections degrade to local if the
+        // section_items table doesn't exist yet
+        try {
+          const secItems = await fetchAllSectionItems(
+            SECTIONS.filter((s) => s.key !== 'classes').map((s) => s.key),
+          )
+          if (!cancelled) setSectionItems((prev) => ({ ...prev, ...secItems }))
+        } catch {
+          // section_items table missing — keep local section data
+        }
       } catch {
-        // Supabase unreachable / tables missing — stay in local mode
         if (!cancelled) setCloud(false)
       }
     })()
@@ -108,12 +137,7 @@ export default function App() {
     } else {
       mutateLocal((prev) => [
         ...prev,
-        {
-          id: `local-${Date.now()}`,
-          name,
-          description: newDesc.trim(),
-          projects: [],
-        },
+        { id: `local-${Date.now()}`, name, description: newDesc.trim(), projects: [] },
       ])
       setShowCreate(false)
       setNewDesc('')
@@ -126,7 +150,7 @@ export default function App() {
       try {
         await apiRemoveClass(id)
         setClasses((prev) => prev.filter((c) => c.id !== id))
-        if (selectedId === id) setSelectedId(null)
+        if (route.id === id) setRoute({ view: 'classes' })
       } catch (err) {
         alert('Չհաջողվեց հեռացնել դասարանը: ' + (err?.message || ''))
       } finally {
@@ -134,7 +158,7 @@ export default function App() {
       }
     } else {
       mutateLocal((prev) => prev.filter((c) => c.id !== id))
-      if (selectedId === id) setSelectedId(null)
+      if (route.id === id) setRoute({ view: 'classes' })
     }
   }
 
@@ -169,7 +193,7 @@ export default function App() {
           projects.filter((p) => p.id !== projectId),
         )
       } catch (err) {
-        alert('Չհաջողվեց հեռացնել նախագիծը: ' + (err?.message || ''))
+        alert('Չհաջողվեց հեռացնել նախագծը: ' + (err?.message || ''))
       } finally {
         setBusy(false)
       }
@@ -192,11 +216,58 @@ export default function App() {
     )
   }
 
+  /* ---------- section items ---------- */
+
+  const items = sectionItems[route.key] || []
+
+  const handleAddSectionItem = async (item) => {
+    if (cloud) {
+      setBusy(true)
+      try {
+        const created = await apiAddSectionItem(route.key, item)
+        mutateLocalSections((prev) => ({
+          ...prev,
+          [route.key]: [...(prev[route.key] || []), created],
+        }))
+        setBusy(false)
+        return
+      } catch {
+        // section_items table may not exist yet — fall back to local
+      }
+      setBusy(false)
+    }
+    mutateLocalSections((prev) => ({
+      ...prev,
+      [route.key]: [
+        ...(prev[route.key] || []),
+        { id: `local-${Date.now()}`, ...item },
+      ],
+    }))
+  }
+
+  const handleRemoveSectionItem = async (id) => {
+    if (cloud && !String(id).startsWith('local-')) {
+      setBusy(true)
+      try {
+        await apiRemoveSectionItem(id)
+      } catch {
+        // fall through to local removal so the UI stays consistent
+      }
+      setBusy(false)
+    }
+    mutateLocalSections((prev) => ({
+      ...prev,
+      [route.key]: (prev[route.key] || []).filter((i) => i.id !== id),
+    }))
+  }
+
+  const section = SECTIONS.find((s) => s.key === route.key) || null
+
   return (
     <div className="app">
       <header className="header">
         <div className="container header-inner">
-          <button className="brand" onClick={() => setSelectedId(null)}>
+          <button className="brand" onClick={() => setRoute({ view: 'home' })}>
             <span className="brand-mark">ԻՄ</span>
             <span className="brand-title">ԻՄ ԹԻՎՄԵԿ</span>
           </button>
@@ -213,7 +284,34 @@ export default function App() {
       )}
 
       <main className="container main">
-        {!selected ? (
+        {route.view === 'home' && (
+          <>
+            <div className="page-head">
+              <h2 className="page-title">Բաժիններ</h2>
+              <p className="page-sub">Ընտրեք բաժինը։</p>
+            </div>
+            <div className="menu-grid">
+              {SECTIONS.map((s) => (
+                <button
+                  key={s.key}
+                  className={'menu-card ' + s.grad}
+                  onClick={() =>
+                    setRoute(
+                      s.key === 'classes'
+                        ? { view: 'classes' }
+                        : { view: 'section', key: s.key },
+                    )
+                  }
+                >
+                  <span className="menu-card-emoji">{s.emoji}</span>
+                  <span className="menu-card-title">{s.title}</span>
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+
+        {route.view === 'classes' && !selected && (
           <>
             <div className="page-head">
               <h2 className="page-title">Դասարաններ</h2>
@@ -260,14 +358,27 @@ export default function App() {
               )}
             </div>
 
-            <ClassList classes={classes} onSelect={setSelectedId} />
+            <ClassList classes={classes} onSelect={(id) => setRoute({ view: 'classes', id })} />
           </>
-        ) : (
+        )}
+
+        {route.view === 'classes' && selected && (
           <ClassView
             classItem={selected}
-            onBack={() => setSelectedId(null)}
+            onBack={() => setRoute({ view: 'classes' })}
             onAddProject={handleAddProject}
             onDeleteProject={handleDeleteProject}
+            busy={busy}
+          />
+        )}
+
+        {route.view === 'section' && section && (
+          <SectionView
+            section={section}
+            items={items}
+            onBack={() => setRoute({ view: 'home' })}
+            onAdd={handleAddSectionItem}
+            onRemove={handleRemoveSectionItem}
             busy={busy}
           />
         )}
@@ -275,7 +386,7 @@ export default function App() {
 
       <footer className="footer">
         <div className="container">
-          <span>ԻՄ ԹԻՎՄԵԿ — դասարաններ և նախագծեր</span>
+          <span>ԻՄ ԹԻՎՄԵԿ</span>
         </div>
       </footer>
 

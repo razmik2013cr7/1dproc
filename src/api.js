@@ -27,6 +27,15 @@ function mapClass(c, projectRows = []) {
   }
 }
 
+function mapSectionItem(r) {
+  return {
+    id: String(r.id),
+    title: r.title,
+    body: r.body || '',
+    photo: r.photo || '',
+  }
+}
+
 const isDataUrl = (s) => typeof s === 'string' && s.startsWith('data:')
 
 function extFromMime(mime) {
@@ -58,6 +67,23 @@ export async function fetchClasses() {
   if (e1) throw e1
   if (e2) throw e2
   return classRows.map((c) => mapClass(c, projectRows))
+}
+
+export async function fetchSectionItems(section) {
+  const { data, error } = await supabase
+    .from('section_items')
+    .select('*')
+    .eq('section', section)
+    .order('created_at')
+  if (error) throw error
+  return data.map(mapSectionItem)
+}
+
+export async function fetchAllSectionItems(sectionKeys) {
+  const results = await Promise.all(
+    sectionKeys.map(async (key) => [key, await fetchSectionItems(key)]),
+  )
+  return Object.fromEntries(results)
 }
 
 /* ---------- classes ---------- */
@@ -123,6 +149,42 @@ export async function deleteProject(projectId) {
     // ignore cleanup failures — the row itself still gets deleted
   }
   const { error } = await supabase.from('projects').delete().eq('id', projectId)
+  if (error) throw error
+}
+
+/* ---------- section items (Պատմություն, Անձնակազմ, …) ---------- */
+
+export async function addSectionItem(section, item) {
+  let photo = ''
+  if (item.photo) {
+    if (isDataUrl(item.photo)) {
+      const blob = await (await fetch(item.photo)).blob()
+      const name = `sec-${section}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${extFromMime(blob.type)}`
+      const path = `sections/${name}`
+      const { error } = await supabase.storage
+        .from(BUCKET)
+        .upload(path, blob, { contentType: blob.type || 'image/jpeg', upsert: false })
+      if (error) throw error
+      photo = MEDIA_BASE + path
+    } else if (!item.photo.startsWith('blob:')) {
+      photo = item.photo
+    }
+  }
+
+  const { data, error } = await supabase
+    .from('section_items')
+    .insert([{ section, title: item.title, body: item.body || '', photo }])
+    .select()
+    .single()
+  if (error) throw error
+  return mapSectionItem(data)
+}
+
+export async function removeSectionItem(id) {
+  const { error } = await supabase
+    .from('section_items')
+    .delete()
+    .eq('id', id)
   if (error) throw error
 }
 

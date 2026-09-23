@@ -1,4 +1,5 @@
 const STORAGE_KEY = 'imtivmek:classes:v3'
+const SECTIONS_KEY = 'imtivmek:sections:v1'
 
 export function loadLocalClasses() {
   try {
@@ -22,6 +23,33 @@ export function saveLocalClasses(classes) {
 export function clearLocalClasses() {
   try {
     localStorage.removeItem(STORAGE_KEY)
+  } catch {
+    // ignore
+  }
+}
+
+export function loadLocalSections() {
+  try {
+    const raw = localStorage.getItem(SECTIONS_KEY)
+    if (!raw) return {}
+    const parsed = JSON.parse(raw)
+    return parsed && typeof parsed === 'object' ? parsed : {}
+  } catch {
+    return {}
+  }
+}
+
+export function saveLocalSections(sections) {
+  try {
+    localStorage.setItem(SECTIONS_KEY, JSON.stringify(sections))
+  } catch {
+    // ignore
+  }
+}
+
+export function clearLocalSections() {
+  try {
+    localStorage.removeItem(SECTIONS_KEY)
   } catch {
     // ignore
   }

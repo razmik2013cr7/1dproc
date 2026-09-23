@@ -565,6 +565,109 @@ body {
   cursor: not-allowed;
 }
 
+/* ===== Home menu (escs.am-style cards) ===== */
+.menu-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1.25rem;
+}
+
+.menu-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  min-height: 150px;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  color: #fff;
+  font: inherit;
+  box-shadow: var(--shadow);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.menu-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+
+.menu-card-emoji {
+  font-size: 2.2rem;
+}
+
+.menu-card-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.g-amber { background: linear-gradient(135deg, #f59e0b, #d97706); }
+.g-blue { background: linear-gradient(135deg, #3b82f6, #1d4ed8); }
+.g-violet { background: linear-gradient(135deg, #8b5cf6, #6d28d9); }
+.g-green { background: linear-gradient(135deg, #10b981, #047857); }
+.g-rose { background: linear-gradient(135deg, #f43f5e, #be123c); }
+
+/* ===== Section hero cards ===== */
+.hero-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.25rem;
+}
+
+.hero-card {
+  position: relative;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.hero-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+
+.hero-card img {
+  width: 100%;
+  height: 190px;
+  object-fit: cover;
+  display: block;
+}
+
+.hero-card-fallback {
+  height: 190px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+}
+
+.hero-card-body {
+  padding: 1rem 1.2rem 1.2rem;
+}
+
+.hero-card-body h3 {
+  font-size: 1.1rem;
+  margin-bottom: 0.3rem;
+}
+
+.hero-card-body p {
+  color: var(--muted);
+  font-size: 0.93rem;
+  white-space: pre-wrap;
+}
+
+.hero-remove {
+  position: absolute;
+  top: 0.7rem;
+  right: 0.7rem;
+  z-index: 2;
+}
+
 /* ===== Responsive ===== */
 @media (max-width: 560px) {
   .brand-title {

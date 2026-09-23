@@ -24,6 +24,17 @@ create table if not exists public.projects (
 
 create index if not exists idx_projects_class on public.projects(class_id);
 
+create table if not exists public.section_items (
+  id uuid primary key default gen_random_uuid(),
+  section text not null,
+  title text not null,
+  body text not null default '',
+  photo text not null default '',
+  created_at timestamptz not null default now()
+);
+
+create index if not exists idx_section_items_section on public.section_items(section);
+
 -- ------------------------------------------------------------
 -- Row Level Security: the PIN lives in the app UI, so anon users
 -- get full access through the API. Anyone with the link can read
@@ -41,6 +52,11 @@ create policy "projects: public read"   on public.projects for select using (tru
 create policy "projects: public insert" on public.projects for insert with check (true);
 create policy "projects: public update" on public.projects for update using (true) with check (true);
 create policy "projects: public delete" on public.projects for delete using (true);
+
+create policy "section_items: public read"   on public.section_items for select using (true);
+create policy "section_items: public insert" on public.section_items for insert with check (true);
+create policy "section_items: public update" on public.section_items for update using (true) with check (true);
+create policy "section_items: public delete" on public.section_items for delete using (true);
 
 -- ------------------------------------------------------------
 -- Storage bucket for uploaded project photos (public read)
