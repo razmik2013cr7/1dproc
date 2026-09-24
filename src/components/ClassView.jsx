@@ -4,13 +4,18 @@ import ProjectCard from './ProjectCard.jsx'
 
 export default function ClassView({
   classItem,
+  color,
   onBack,
   onAddProject,
   onDeleteProject,
+  onRename,
   busy,
 }) {
   const [showPin, setShowPin] = useState(false)
   const [showForm, setShowForm] = useState(false)
+  const [showRename, setShowRename] = useState(false)
+  const [renameValue, setRenameValue] = useState('')
+  const [deleteTarget, setDeleteTarget] = useState(null) // project id pending PIN
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [link, setLink] = useState('')
@@ -43,7 +48,12 @@ export default function ClassView({
 
   const handlePinSuccess = () => {
     setShowPin(false)
-    setShowForm(true)
+    if (deleteTarget) {
+      onDeleteProject(classItem.id, deleteTarget)
+      setDeleteTarget(null)
+    } else {
+      setShowForm(true)
+    }
   }
 
   return (
@@ -57,10 +67,31 @@ export default function ClassView({
         </button>
       </div>
 
-      <h2 className="view-title">{classItem.name}</h2>
+      <h2 className="view-title">
+        <span
+          className="nb-swatch"
+          style={{ background: color ? color.base : undefined }}
+        />
+        {classItem.custom_name || classItem.name}
+      </h2>
+      {classItem.custom_name && (
+        <p className="view-code">դասարան {classItem.name}</p>
+      )}
       {classItem.description && (
         <p className="view-desc">{classItem.description}</p>
       )}
+
+      <div className="rename-row">
+        <button
+          className="btn btn-ghost btn-small"
+          onClick={() => {
+            setRenameValue(classItem.custom_name || '')
+            setShowRename(true)
+          }}
+        >
+          ✏️ Անվանափոխել
+        </button>
+      </div>
 
       {classItem.projects.length === 0 ? (
         <div className="empty">
@@ -72,7 +103,7 @@ export default function ClassView({
             <ProjectCard
               key={p.id}
               project={p}
-              onDelete={() => onDeleteProject(classItem.id, p.id)}
+              onDelete={() => setDeleteTarget(p.id)}
               busy={busy}
             />
           ))}
@@ -81,10 +112,63 @@ export default function ClassView({
 
       {showPin && (
         <PinModal
-          title="Նախագիծ ավելացնել դասարանում"
+          title={`Նախագիծ ավելացնել «${classItem.name}»-ում`}
+          pin={classItem}
           onCancel={() => setShowPin(false)}
           onSuccess={handlePinSuccess}
         />
+      )}
+
+      {deleteTarget && (
+        <PinModal
+          title={`Հեռացնել նախագիծ «${classItem.name}»-ից`}
+          pin={classItem}
+          onCancel={() => setDeleteTarget(null)}
+          onSuccess={handlePinSuccess}
+        />
+      )}
+
+      {showRename && (
+        <div className="modal-overlay" onClick={() => setShowRename(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h3 className="modal-title">Անվանափոխել դասարանը</h3>
+            <p className="modal-sub">
+              Դասարանի կոդը մնում է «{classItem.name}» — փոխվում է միայն ցուցադրվող անունը։
+            </p>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault()
+                onRename(classItem.id, renameValue.trim())
+                setShowRename(false)
+              }}
+            >
+              <label className="field">
+                Դասարանի անուն
+                <input
+                  type="text"
+                  className="input"
+                  value={renameValue}
+                  onChange={(e) => setRenameValue(e.target.value)}
+                  placeholder="օր.՝ Our Learning Space"
+                  autoFocus
+                />
+              </label>
+              <p className="field-hint">Դատարկ թողնելու դեպքում կցուցադրվի «{classItem.name}»։</p>
+              <div className="modal-actions">
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  onClick={() => setShowRename(false)}
+                >
+                  Չեղարկել
+                </button>
+                <button type="submit" className="btn btn-primary" disabled={busy}>
+                  Պահպանել
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
 
       {showForm && (

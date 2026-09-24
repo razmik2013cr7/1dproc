@@ -1,17 +1,22 @@
 import { useState } from 'react'
-import { PIN } from '../pin.js'
+import { pinFor } from '../pin.js'
 
-export default function PinModal({ title, onCancel, onSuccess }) {
-  const [pin, setPin] = useState('')
+// `pin` may be:
+//   - a string (compare directly)
+//   - a class object (compare against its own PIN, falling back to master)
+//   - undefined (fall back to master PIN)
+export default function PinModal({ title, pin, onCancel, onSuccess }) {
+  const [value, setValue] = useState('')
   const [error, setError] = useState('')
+  const expected = typeof pin === 'string' ? pin : pinFor(pin)
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    if (pin === PIN) {
+    if (value === expected) {
       onSuccess()
     } else {
       setError('Սխալ ծածկագիր։ Փորձեք կրկին։')
-      setPin('')
+      setValue('')
     }
   }
 
@@ -24,10 +29,10 @@ export default function PinModal({ title, onCancel, onSuccess }) {
           <input
             type="password"
             className="input"
-            value={pin}
+            value={value}
             placeholder="Ծածկագիր"
             onChange={(e) => {
-              setPin(e.target.value)
+              setValue(e.target.value)
               setError('')
             }}
             autoFocus

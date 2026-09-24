@@ -3,6 +3,8 @@ import ClassList from './components/ClassList.jsx'
 import ClassView from './components/ClassView.jsx'
 import SectionView from './components/SectionView.jsx'
 import PinModal from './components/PinModal.jsx'
+import { PIN } from './pin.js'
+import { pickColor, colorOf, sortedIndex } from './colors.js'
 import {
   loadLocalClasses,
   saveLocalClasses,
@@ -21,6 +23,8 @@ import {
   addSectionItem as apiAddSectionItem,
   removeSectionItem as apiRemoveSectionItem,
   migrateLocalClasses,
+  setClassColor,
+  setClassCustomName,
 } from './api.js'
 import { SECTIONS } from './sections.js'
 import './index.css'
@@ -37,6 +41,8 @@ export default function App() {
   const [grade, setGrade] = useState('10')
   const [letter, setLetter] = useState('ա')
   const [newDesc, setNewDesc] = useState('')
+  const [newPin, setNewPin] = useState('')
+  const [newCustom, setNewCustom] = useState('')
   const [cloud, setCloud] = useState(false)
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState('')
@@ -90,6 +96,7 @@ export default function App() {
         if (!cancelled) {
           setClasses(remote)
           setCloud(true)
+          backfillColors(remote, () => cancelled)
         }
 
         // Load section items too — sections degrade to local if the
@@ -111,6 +118,29 @@ export default function App() {
     }
   }, [])
 
+  // One-time: classes created before the color column get their deterministic
+  // fallback color saved to the cloud so every device shows the same colors.
+  const backfillColors = async (remoteClasses, cancelled) => {
+    const missing = remoteClasses.filter((c) => !c.color)
+    if (missing.length === 0) return
+    const named = [...remoteClasses].sort((a, b) =>
+      String(a.name).localeCompare(String(b.name), 'hy'),
+    )
+    for (const c of missing) {
+      if (cancelled()) return
+      const idx = named.findIndex((x) => x.id === c.id)
+      const col = colorOf(c, idx)
+      try {
+        await setClassColor(c.id, col.name)
+        setClasses((prev) =>
+          prev.map((x) => (x.id === c.id ? { ...x, color: col.name } : x)),
+        )
+      } catch {
+        // column may not exist yet — the deterministic fallback still applies
+      }
+    }
+  }
+
   const handleCreate = async (e) => {
     e.preventDefault()
     const name = `${grade}${letter}`
@@ -118,16 +148,34 @@ export default function App() {
       alert('Այս դասարանն արդեն կա։')
       return
     }
+    const color = pickColor(classes)
+    const pin = newPin.trim()
+    const customName = newCustom.trim()
     if (cloud) {
       setBusy(true)
       try {
-        const created = await apiCreateClass(name, newDesc.trim())
+        const created = await apiCreateClass(name, newDesc.trim(), color.name, pin, customName)
         setClasses((prev) => [...prev, created])
         setShowCreate(false)
         setNewDesc('')
+        setNewPin('')
+        setNewCustom('')
       } catch (err) {
         if (String(err?.code) === '23505') {
           alert('Այս դասարանն արդեն կա։')
+        } else if (String(err?.code) === '42703' || String(err?.message || '').includes('column')) {
+          // color/pin/custom_name columns not added yet — create without them
+          try {
+            const created = await apiCreateClass(name, newDesc.trim(), '', '', '')
+            setClasses((prev) => [...prev, created])
+            setShowCreate(false)
+            setNewDesc('')
+            setNewPin('')
+            setNewCustom('')
+            setNotice('Ամպում չկան color/pin սյուները — թարմացրեք SQL-ը։')
+          } catch (err2) {
+            alert('Չհաջողվեց ստեղծել դասարանը: ' + (err2?.message || ''))
+          }
         } else {
           alert('Չհաջողվեց ստեղծել դասարանը: ' + (err?.message || ''))
         }
@@ -137,10 +185,20 @@ export default function App() {
     } else {
       mutateLocal((prev) => [
         ...prev,
-        { id: `local-${Date.now()}`, name, description: newDesc.trim(), projects: [] },
+        {
+          id: `local-${Date.now()}`,
+          name,
+          description: newDesc.trim(),
+          color: color.name,
+          pin,
+          custom_name: customName,
+          projects: [],
+        },
       ])
       setShowCreate(false)
       setNewDesc('')
+      setNewPin('')
+      setNewCustom('')
     }
   }
 
@@ -208,6 +266,28 @@ export default function App() {
     }
   }
 
+  // Rename a class (custom display name shown on cards and the class view).
+  const handleRename = async (id, customName) => {
+    const applyLocal = () =>
+      mutateLocal((prev) =>
+        prev.map((c) => (c.id === id ? { ...c, custom_name: customName } : c)),
+      )
+    if (cloud && !String(id).startsWith('local-')) {
+      setBusy(true)
+      try {
+        await setClassCustomName(id, customName)
+        applyLocal()
+      } catch {
+        // column may not exist yet — apply locally regardless
+        applyLocal()
+      } finally {
+        setBusy(false)
+      }
+    } else {
+      applyLocal()
+    }
+  }
+
   function updateClassProjects(classId, fn) {
     setClasses((prev) =>
       prev.map((c) =>
@@ -262,6 +342,7 @@ export default function App() {
   }
 
   const section = SECTIONS.find((s) => s.key === route.key) || null
+  const viewColor = selected ? colorOf(selected, sortedIndex(classes, selected)) : null
 
   return (
     <div className="app">
@@ -283,7 +364,10 @@ export default function App() {
         </div>
       )}
 
-      <main className="container main">
+      <main
+        className={'container main' + (viewColor ? ' class-tinted' : '')}
+        style={viewColor ? { '--nb': viewColor.base } : undefined}
+      >
         {route.view === 'home' && (
           <>
             <div className="page-head">
@@ -365,9 +449,11 @@ export default function App() {
         {route.view === 'classes' && selected && (
           <ClassView
             classItem={selected}
+            color={viewColor}
             onBack={() => setRoute({ view: 'classes' })}
             onAddProject={handleAddProject}
             onDeleteProject={handleDeleteProject}
+            onRename={handleRename}
             busy={busy}
           />
         )}
@@ -395,10 +481,13 @@ export default function App() {
           title={
             pinAction === 'create' ? 'Ստեղծել դասարան' : 'Հեռացնել դասարան'
           }
+          pin={PIN}
           onCancel={() => setPinAction(null)}
           onSuccess={() => {
             if (pinAction === 'create') {
               setNewDesc('')
+              setNewPin('')
+              setNewCustom('')
               setShowCreate(true)
             } else {
               handleRemove(pinAction.id)
@@ -447,6 +536,33 @@ export default function App() {
                 Դասարանը կկոչվի՝ <strong>{grade}{letter}</strong>
               </p>
               <label className="field">
+                Դասարանի ծածկագիր
+                <input
+                  type="text"
+                  className="input"
+                  value={newPin}
+                  onChange={(e) => setNewPin(e.target.value)}
+                  placeholder="օր.՝ #space"
+                />
+              </label>
+              <p className="field-hint">
+                Այս ծածկագրով դասարանը կավելացնի իր նախագծերը։ Դատարկ թողնելու
+                դեպքում կգործի գլխավոր ծածկագիրը։
+              </p>
+              <label className="field">
+                Դասարանի անուն (ըստ ցանկության)
+                <input
+                  type="text"
+                  className="input"
+                  value={newCustom}
+                  onChange={(e) => setNewCustom(e.target.value)}
+                  placeholder="օր.՝ Our Learning Space"
+                />
+              </label>
+              <p className="field-hint">
+                Եթե դատարկ թողնեք՝ կցուցադրվի պարզապես «{grade}{letter}»։
+              </p>
+              <label className="field">
                 Նկարագրություն (ըստ ցանկության)
                 <input
                   type="text"
@@ -454,7 +570,6 @@ export default function App() {
                   value={newDesc}
                   onChange={(e) => setNewDesc(e.target.value)}
                   placeholder="օր.՝ Բնագիտության նախագծեր"
-                  autoFocus
                 />
               </label>
               <div className="modal-actions">

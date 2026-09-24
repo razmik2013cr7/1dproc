@@ -21,6 +21,9 @@ function mapClass(c, projectRows = []) {
     id: String(c.id),
     name: c.name,
     description: c.description || '',
+    color: c.color || '',
+    pin: c.pin || '',
+    custom_name: c.custom_name || '',
     projects: projectRows
       .filter((p) => String(p.class_id) === String(c.id))
       .map(mapProject),
@@ -88,10 +91,18 @@ export async function fetchAllSectionItems(sectionKeys) {
 
 /* ---------- classes ---------- */
 
-export async function createClass(name, description) {
+export async function createClass(name, description, color, pin, customName) {
   const { data, error } = await supabase
     .from('classes')
-    .insert([{ name, description: description || '' }])
+    .insert([
+      {
+        name,
+        description: description || '',
+        color: color || '',
+        pin: pin || '',
+        custom_name: customName || '',
+      },
+    ])
     .select()
     .single()
   if (error) throw error
@@ -101,6 +112,25 @@ export async function createClass(name, description) {
 export async function removeClass(id) {
   await supabase.from('projects').delete().eq('class_id', id)
   const { error } = await supabase.from('classes').delete().eq('id', id)
+  if (error) throw error
+}
+
+// Persist a class's notebook color (best-effort — used to backfill colors
+// for classes created before the color column existed).
+export async function setClassColor(id, color) {
+  const { error } = await supabase
+    .from('classes')
+    .update({ color })
+    .eq('id', id)
+  if (error) throw error
+}
+
+// Set a class's custom display name (e.g. «Our Learning Space»).
+export async function setClassCustomName(id, customName) {
+  const { error } = await supabase
+    .from('classes')
+    .update({ custom_name: customName })
+    .eq('id', id)
   if (error) throw error
 }
 
@@ -196,7 +226,15 @@ export async function migrateLocalClasses(localClasses) {
     let row
     const { data, error } = await supabase
       .from('classes')
-      .insert([{ name: c.name, description: c.description || '' }])
+      .insert([
+        {
+          name: c.name,
+          description: c.description || '',
+          color: c.color || '',
+          pin: c.pin || '',
+          custom_name: c.custom_name || '',
+        },
+      ])
       .select()
       .single()
     if (error) {
@@ -212,7 +250,15 @@ export async function migrateLocalClasses(localClasses) {
       row = data
     }
 
-    const cls = { id: String(row.id), name: row.name, description: row.description || '', projects: [] }
+    const cls = {
+      id: String(row.id),
+      name: row.name,
+      description: row.description || '',
+      color: row.color || '',
+      pin: row.pin || '',
+      custom_name: row.custom_name || '',
+      projects: [],
+    }
     for (const p of c.projects || []) {
       try {
         cls.projects.push(await addProject(cls.id, p))
