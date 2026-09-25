@@ -9,6 +9,7 @@ export default function ClassView({
   onAddProject,
   onDeleteProject,
   onRename,
+  onEditProject,
   busy,
 }) {
   const [showPin, setShowPin] = useState(false)
@@ -104,6 +105,7 @@ export default function ClassView({
               key={p.id}
               project={p}
               onDelete={() => setDeleteTarget(p.id)}
+              onEdit={(projectId, project) => onEditProject(classItem.id, projectId, project)}
               busy={busy}
             />
           ))}

@@ -22,6 +22,9 @@ import {
   deleteProject as apiDeleteProject,
   addSectionItem as apiAddSectionItem,
   removeSectionItem as apiRemoveSectionItem,
+  updateProject as apiUpdateProject,
+  updateSectionItem as apiUpdateSectionItem,
+  updateClass as apiUpdateClass,
   migrateLocalClasses,
   setClassColor,
   setClassCustomName,
@@ -43,6 +46,13 @@ export default function App() {
   const [newDesc, setNewDesc] = useState('')
   const [newPin, setNewPin] = useState('')
   const [newCustom, setNewCustom] = useState('')
+  const [editClassId, setEditClassId] = useState(null)
+  const [editPin, setEditPin] = useState(false)
+  const [editGrade, setEditGrade] = useState('10')
+  const [editLetter, setEditLetter] = useState('ա')
+  const [editCustom, setEditCustom] = useState('')
+  const [editDesc, setEditDesc] = useState('')
+  const [showEditClass, setShowEditClass] = useState(false)
   const [cloud, setCloud] = useState(false)
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState('')
@@ -266,6 +276,21 @@ export default function App() {
     }
   }
 
+  const handleEditClassSubmit = (e) => {
+    e.preventDefault()
+    const code = `${editGrade}${editLetter}`
+    if (classes.some((c) => c.name === code && c.id !== editClassId)) {
+      alert('«' + code + '» կոդով դասարան արդեն կա։')
+      return
+    }
+    handleEditClass(editClassId, {
+      name: code,
+      custom_name: editCustom.trim(),
+      description: editDesc.trim(),
+    })
+    setShowEditClass(false)
+  }
+
   // Rename a class (custom display name shown on cards and the class view).
   const handleRename = async (id, customName) => {
     const applyLocal = () =>
@@ -294,6 +319,79 @@ export default function App() {
         c.id === classId ? { ...c, projects: fn(c.projects) } : c,
       ),
     )
+  }
+
+  /* ---------- editing (master PIN) ---------- */
+
+  const handleEditProject = async (classId, projectId, project) => {
+    const applyLocal = () =>
+      updateClassProjects(classId, (projects) =>
+        projects.map((p) => (p.id === projectId ? { ...p, ...project } : p)),
+      )
+    if (cloud && !String(projectId).startsWith('p-')) {
+      setBusy(true)
+      try {
+        const updated = await apiUpdateProject(projectId, project)
+        updateClassProjects(classId, (projects) =>
+          projects.map((p) => (p.id === projectId ? updated : p)),
+        )
+      } catch {
+        applyLocal()
+      } finally {
+        setBusy(false)
+      }
+    } else {
+      applyLocal()
+    }
+  }
+
+  const handleEditSectionItem = async (sectionKey, id, item) => {
+    const applyLocal = () =>
+      mutateLocalSections((prev) => ({
+        ...prev,
+        [sectionKey]: (prev[sectionKey] || []).map((i) =>
+          i.id === id ? { ...i, ...item } : i,
+        ),
+      }))
+    if (cloud && !String(id).startsWith('local-')) {
+      setBusy(true)
+      try {
+        const updated = await apiUpdateSectionItem(id, item)
+        mutateLocalSections((prev) => ({
+          ...prev,
+          [sectionKey]: (prev[sectionKey] || []).map((i) =>
+            i.id === id ? updated : i,
+          ),
+        }))
+      } catch {
+        applyLocal()
+      } finally {
+        setBusy(false)
+      }
+    } else {
+      applyLocal()
+    }
+  }
+
+  // Full class edit: grade/letter code, custom name, description.
+  const handleEditClass = async (id, fields) => {
+    const applyLocal = () =>
+      mutateLocal((prev) =>
+        prev.map((c) => (c.id === id ? { ...c, ...fields } : c)),
+      )
+    if (cloud && !String(id).startsWith('local-')) {
+      setBusy(true)
+      try {
+        const updated = await apiUpdateClass(id, fields)
+        setClasses((prev) => prev.map((c) => (c.id === id ? updated : c)))
+      } catch {
+        applyLocal()
+      } finally {
+        setBusy(false)
+      }
+    } else {
+      applyLocal()
+    }
   }
 
   /* ---------- section items ---------- */
@@ -442,7 +540,14 @@ export default function App() {
               )}
             </div>
 
-            <ClassList classes={classes} onSelect={(id) => setRoute({ view: 'classes', id })} />
+            <ClassList
+              classes={classes}
+              onSelect={(id) => setRoute({ view: 'classes', id })}
+              onEdit={(id) => {
+                setEditClassId(id)
+                setEditPin(true)
+              }}
+            />
           </>
         )}
 
@@ -454,6 +559,7 @@ export default function App() {
             onAddProject={handleAddProject}
             onDeleteProject={handleDeleteProject}
             onRename={handleRename}
+            onEditProject={handleEditProject}
             busy={busy}
           />
         )}
@@ -465,6 +571,7 @@ export default function App() {
             onBack={() => setRoute({ view: 'home' })}
             onAdd={handleAddSectionItem}
             onRemove={handleRemoveSectionItem}
+            onEdit={handleEditSectionItem}
             busy={busy}
           />
         )}
@@ -475,6 +582,102 @@ export default function App() {
           <span>ԻՄ ԹԻՎՄԵԿ</span>
         </div>
       </footer>
+
+      {editPin && (
+        <PinModal
+          title="Խմբագրել դասարանը"
+          pin={PIN}
+          onCancel={() => setEditPin(false)}
+          onSuccess={() => {
+            const cls = classes.find((c) => c.id === editClassId)
+            if (cls) {
+              const code = cls.name || ''
+              const m = code.match(/^(\d+)(.*)$/)
+              setEditGrade(m ? m[1] : '10')
+              setEditLetter(m ? m[2] : 'ա')
+              setEditCustom(cls.custom_name || '')
+              setEditDesc(cls.description || '')
+            }
+            setEditPin(false)
+            setShowEditClass(true)
+          }}
+        />
+      )}
+
+      {showEditClass && editClassId && (
+        <div className="modal-overlay" onClick={() => setShowEditClass(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h3 className="modal-title">Խմբագրել դասարանը</h3>
+            <form onSubmit={handleEditClassSubmit}>
+              <div className="field-row">
+                <label className="field">
+                  Դասարան
+                  <select
+                    className="input"
+                    value={editGrade}
+                    onChange={(e) => setEditGrade(e.target.value)}
+                  >
+                    {GRADES.map((g) => (
+                      <option key={g} value={g}>
+                        {g}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="field">
+                  Տառ
+                  <select
+                    className="input"
+                    value={editLetter}
+                    onChange={(e) => setEditLetter(e.target.value)}
+                  >
+                    {LETTERS.map((l) => (
+                      <option key={l} value={l}>
+                        {l}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+              <p className="name-preview">
+                Կոդը կդառնա՝ <strong>{editGrade}{editLetter}</strong>
+              </p>
+              <label className="field">
+                Դասարանի անուն (ըստ ցանկության)
+                <input
+                  type="text"
+                  className="input"
+                  value={editCustom}
+                  onChange={(e) => setEditCustom(e.target.value)}
+                  placeholder="օր.՝ Our Learning Space"
+                />
+              </label>
+              <label className="field">
+                Նկարագրություն (ըստ ցանկության)
+                <input
+                  type="text"
+                  className="input"
+                  value={editDesc}
+                  onChange={(e) => setEditDesc(e.target.value)}
+                  placeholder="օր.՝ Բնագիտության նախագծեր"
+                />
+              </label>
+              <div className="modal-actions">
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  onClick={() => setShowEditClass(false)}
+                >
+                  Չեղարկել
+                </button>
+                <button type="submit" className="btn btn-primary" disabled={busy}>
+                  Պահպանել
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {pinAction && (
         <PinModal

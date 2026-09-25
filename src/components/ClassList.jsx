@@ -1,6 +1,6 @@
 import { colorOf, sortedIndex } from '../colors.js'
 
-export default function ClassList({ classes, onSelect }) {
+export default function ClassList({ classes, onSelect, onEdit }) {
   if (classes.length === 0) {
     return (
       <div className="empty">
@@ -17,24 +17,35 @@ export default function ClassList({ classes, onSelect }) {
       {classes.map((c) => {
         const col = colorOf(c, sortedIndex(classes, c))
         return (
-          <button
-            key={c.id}
-            className={'class-card nb-card ' + col.grad}
-            onClick={() => onSelect(c.id)}
-          >
-            <span className="nb-tape" aria-hidden="true" />
-            <span className="nb-rings" aria-hidden="true">
-              {[0, 1, 2, 3].map((i) => (
-                <i key={i} />
-              ))}
-            </span>
-            <span className="nb-body">
-              <span className="nb-name">{c.custom_name || c.name}</span>
-              {c.custom_name && <span className="nb-code">դասարան {c.name}</span>}
-              {c.description && <span className="nb-desc">{c.description}</span>}
-              <span className="nb-count">{c.projects.length} նախագիծ</span>
-            </span>
-          </button>
+          <div key={c.id} className="nb-card-wrap">
+            <button
+              className={'class-card nb-card ' + col.grad}
+              onClick={() => onSelect(c.id)}
+            >
+              <span className="nb-tape" aria-hidden="true" />
+              <span className="nb-rings" aria-hidden="true">
+                {[0, 1, 2, 3].map((i) => (
+                  <i key={i} />
+                ))}
+              </span>
+              <span className="nb-body">
+                <span className="nb-name">{c.custom_name || c.name}</span>
+                {c.custom_name && <span className="nb-code">դասարան {c.name}</span>}
+                {c.description && <span className="nb-desc">{c.description}</span>}
+                <span className="nb-count">{c.projects.length} նախագիծ</span>
+              </span>
+            </button>
+            {onEdit && (
+              <button
+                type="button"
+                className="chip nb-edit"
+                title="Խմբագրել"
+                onClick={() => onEdit(c.id)}
+              >
+                ✏️
+              </button>
+            )}
+          </div>
         )
       })}
     </div>

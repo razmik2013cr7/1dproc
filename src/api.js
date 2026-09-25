@@ -161,6 +161,23 @@ export async function addProject(classId, project) {
   return mapProject(data)
 }
 
+export async function updateProject(projectId, project) {
+  const { data, error } = await supabase
+    .from('projects')
+    .update({
+      title: project.title,
+      description: project.description || '',
+      link: project.link || '',
+      photos: project.photos || [],
+      videos: project.videos || [],
+    })
+    .eq('id', projectId)
+    .select()
+    .single()
+  if (error) throw error
+  return mapProject(data)
+}
+
 export async function deleteProject(projectId) {
   // best-effort cleanup of stored photos, then delete the row
   try {
@@ -216,6 +233,44 @@ export async function removeSectionItem(id) {
     .delete()
     .eq('id', id)
   if (error) throw error
+}
+
+export async function updateSectionItem(id, item) {
+  let photo = item.photo || ''
+  if (photo && isDataUrl(photo)) {
+    const blob = await (await fetch(photo)).blob()
+    const name = `sec-edit-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${extFromMime(blob.type)}`
+    const path = `sections/${name}`
+    const { error: upErr } = await supabase.storage
+      .from(BUCKET)
+      .upload(path, blob, { contentType: blob.type || 'image/jpeg', upsert: false })
+    if (upErr) throw upErr
+    photo = MEDIA_BASE + path
+  }
+
+  const { data, error } = await supabase
+    .from('section_items')
+    .update({ title: item.title, body: item.body || '', photo })
+    .eq('id', id)
+    .select()
+    .single()
+  if (error) throw error
+  return mapSectionItem(data)
+}
+
+export async function updateClass(id, fields) {
+  const patch = {}
+  if (fields.name !== undefined) patch.name = fields.name
+  if (fields.description !== undefined) patch.description = fields.description
+  if (fields.custom_name !== undefined) patch.custom_name = fields.custom_name
+  const { data, error } = await supabase
+    .from('classes')
+    .update(patch)
+    .eq('id', id)
+    .select()
+    .single()
+  if (error) throw error
+  return mapClass(data)
 }
 
 /* ---------- one-time migration from localStorage ---------- */

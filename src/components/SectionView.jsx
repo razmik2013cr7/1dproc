@@ -3,9 +3,10 @@ import PinModal from './PinModal.jsx'
 
 // Photo-or-initials card in the style of escs.am hero cards:
 // full-bleed image with a bold white title across the top.
-export default function SectionView({ section, items, onBack, onAdd, onRemove, busy }) {
+export default function SectionView({ section, items, onBack, onAdd, onRemove, onEdit, busy }) {
   const [showPin, setShowPin] = useState(false)
   const [showForm, setShowForm] = useState(false)
+  const [editTarget, setEditTarget] = useState(null)
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
   const [photo, setPhoto] = useState('')
@@ -25,9 +26,27 @@ export default function SectionView({ section, items, onBack, onAdd, onRemove, b
     setShowForm(false)
   }
 
+  const startEdit = (it) => {
+    setEditTarget(it)
+    setTitle(it.title)
+    setBody(it.body || '')
+    setPhoto(it.photo || '')
+  }
+
   const handlePinSuccess = () => {
     setShowPin(false)
     setShowForm(true)
+  }
+
+  const submitEdit = async (e) => {
+    e.preventDefault()
+    const t = title.trim()
+    if (!t || !editTarget) return
+    await onEdit(editTarget.id, { title: t, body: body.trim(), photo })
+    setEditTarget(null)
+    setTitle('')
+    setBody('')
+    setPhoto('')
   }
 
   return (
@@ -66,16 +85,28 @@ export default function SectionView({ section, items, onBack, onAdd, onRemove, b
                 <h3>{it.title}</h3>
                 {it.body && <p>{it.body}</p>}
               </div>
-              {onRemove && (
-                <button
-                  type="button"
-                  className="chip chip-danger hero-remove"
-                  onClick={() => onRemove(it.id)}
-                  disabled={busy}
-                >
-                  🗑 Հեռացնել
-                </button>
-              )}
+              <div className="hero-actions">
+                {onEdit && (
+                  <button
+                    type="button"
+                    className="chip hero-edit"
+                    onClick={() => startEdit(it)}
+                    disabled={busy}
+                  >
+                    ✏️ Խմբագրել
+                  </button>
+                )}
+                {onRemove && (
+                  <button
+                    type="button"
+                    className="chip chip-danger"
+                    onClick={() => onRemove(it.id)}
+                    disabled={busy}
+                  >
+                    🗑 Հեռացնել
+                  </button>
+                )}
+              </div>
             </article>
           ))}
         </div>
@@ -87,6 +118,72 @@ export default function SectionView({ section, items, onBack, onAdd, onRemove, b
           onCancel={() => setShowPin(false)}
           onSuccess={handlePinSuccess}
         />
+      )}
+
+      {editTarget && (
+        <div className="modal-overlay" onClick={() => setEditTarget(null)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h3 className="modal-title">Խմբագրել — {section.title}</h3>
+            <form onSubmit={submitEdit}>
+              <label className="field">
+                Վերնագիր
+                <input
+                  type="text"
+                  className="input"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  autoFocus
+                  required
+                />
+              </label>
+              <label className="field">
+                Նկարագրություն
+                <textarea
+                  className="input"
+                  rows={4}
+                  value={body}
+                  onChange={(e) => setBody(e.target.value)}
+                />
+              </label>
+              <label className="field">
+                Լուսանկար
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="input"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0]
+                    if (!f) return
+                    const reader = new FileReader()
+                    reader.onload = () => setPhoto(reader.result)
+                    reader.readAsDataURL(f)
+                  }}
+                />
+              </label>
+              {photo && (
+                <button
+                  type="button"
+                  className="chip chip-danger"
+                  onClick={() => setPhoto('')}
+                >
+                  ✕ Հեռացնել լուսանկարը
+                </button>
+              )}
+              <div className="modal-actions">
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  onClick={() => setEditTarget(null)}
+                >
+                  Չեղարկել
+                </button>
+                <button type="submit" className="btn btn-primary" disabled={busy}>
+                  Պահպանել
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
 
       {showForm && (
