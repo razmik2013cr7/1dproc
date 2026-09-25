@@ -9,19 +9,19 @@ export const PIN = 'IM1dpRoc!!!'
 // New classes get their own PIN chosen at creation time.
 export const CLASS_PINS = {
   '10ա': '#space1',
-  '10բ': '10Bb2026',
+  '10բ': '@10Bb2026',
   '10գ': 'Smart22!',
-  '10դ': '#justiti10',
-  '11ա': 'Lpzuren11',
+  '10դ': '#Justitia10',
+  '11ա': '@Lezuner11',
   '11բ': '#BnF11',
   '11գ': '2025Lg#',
-  '11դ': '#SuS12',
+  '11դ': '#Sus12',
   '12ա': '#Hovo2014',
-  '12բ': '', // no password given
-  '12գ': '', // no password given
+  '12բ': '1D9N5T3',
+  '12գ': '', // չկա — no password
   '12դ': 'Hovo2014!',
-  '12ե': '1School12#',
-  '12զ': '#12Tntes', // from the earlier notebook reading — say the word to remove
+  '12ե': '1SchooL12#',
+  '12զ': '#12Tntes',
 }
 
 // The PIN that unlocks a given class's project form: the class's own code
