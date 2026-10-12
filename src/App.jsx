@@ -2283,27 +2283,27 @@ async function P0(t, e) {
   return tu(n);
 }
 const Zo = [
-    { key: "history", title: "Պատմություն", emoji: "📜", grad: "g-amber" },
-    { key: "staff", title: "Անձնակազմ", emoji: "👥", grad: "g-blue" },
+    { key: "history", title: "Պատմություն", emoji: "📜", grad: "g-orange" },
+    { key: "staff", title: "Անձնակազմ", emoji: "👥", grad: "g-orange" },
     {
       key: "administration",
       title: "Տնօրենություն",
       emoji: "🏛️",
-      grad: "g-violet",
+      grad: "g-orange",
     },
-    { key: "classes", title: "Դասարաններ", emoji: "📘", grad: "g-green" },
-    { key: "jobs", title: "Աշխատատեղեր", emoji: "💼", grad: "g-rose" },
+    { key: "classes", title: "Դասարաններ", emoji: "📘", grad: "g-orange" },
+    { key: "jobs", title: "Աշխատատեղեր", emoji: "💼", grad: "g-orange" },
     {
       key: "best-student",
       title: "Տարվա ամենալավ սովորող",
       emoji: "🏆",
-      grad: "g-amber",
+      grad: "g-orange",
     },
     {
       key: "best-project",
       title: "Տարվա ամենալավ նախագիծ",
       emoji: "🥇",
-      grad: "g-blue",
+      grad: "g-orange",
     },
   ],
   I0 = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"],

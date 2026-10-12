@@ -322,6 +322,7 @@ main.main > * {
   --c1: #0891b2;
   --c2: #06b6d4;
 }
+.g-orange,
 .nb-orange {
   --c1: #ea580c;
   --c2: #f97316;
@@ -368,6 +369,7 @@ main.main > * {
 .g-violet,
 .g-green,
 .g-rose,
+.g-orange,
 .hero-card-fallback {
   background: linear-gradient(135deg, var(--c1), var(--c2));
 }
