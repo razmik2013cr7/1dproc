@@ -153,10 +153,11 @@ function Hi({ title: t, pin: e, onCancel: r, onSuccess: n }) {
     [o, a] = A.useState(""),
     l = typeof e == "string" ? e : Gg(e),
     u = (d) => {
-      (d.preventDefault(),
-        s === l || s === zi || s === Kg
-          ? n()
-          : (a("Սխալ ծածկագիր։ Փորձեք կրկին։"), i("")));
+      d.preventDefault();
+      const z = s.replace(/…/g, "...");
+      (Jg() ? s === l || s === zi || z === Kg : z === Kg)
+        ? n()
+        : (a("Սխալ ծածկագիր։ Փորձեք կրկին։"), i(""));
     };
   return c.jsx("div", {
     className: "modal-overlay",
@@ -168,7 +169,9 @@ function Hi({ title: t, pin: e, onCancel: r, onSuccess: n }) {
         c.jsx("h3", { className: "modal-title", children: t }),
         c.jsx("p", {
           className: "modal-sub",
-          children: "Մուտքագրեք ծածկագիրը՝ շարունակելու համար։",
+          children: Jg()
+            ? "Մուտքագրեք ծածկագիրը՝ շարունակելու համար։"
+            : "Խմբագրումները հասանելի են միայն ամսվա առաջին 5 օրերին։ Շարունակելու համար մուտքագրեք հատուկ ծածկագիր։",
         }),
         c.jsxs("form", {
           onSubmit: u,
@@ -372,6 +375,7 @@ function Zg({
     [Fe, j] = A.useState([]),
     [B, F] = A.useState([]),
     [M, Q] = A.useState([]),
+    [qe, qd] = A.useState(!1),
     [Pe, me] = A.useState({ bold: !1, italic: !1, underline: !1 }),
     ut = () => {
       (Ee(""),
@@ -484,7 +488,7 @@ function Zg({
                       Be(L.link || ""),
                       j(L.photos || []),
                       F(L.videos || []),
-                      _(!0));
+                      Jg() ? _(!0) : (qd(!0), d(!0)));
                   },
                   busy: l,
                 },
@@ -500,10 +504,12 @@ function Zg({
               ? "Տարբերակը հաջորդ մակարդակ"
               : f
                 ? `Հեռացնել նախագիծ «${t.name}»-ից`
-                : `Նախագիծ ավելացնել «${t.name}»-ում`,
+                : qe
+                  ? "Խմբագրել նախագիծ"
+                  : `Նախագիծ ավելացնել «${t.name}»-ում`,
           pin: t,
           onCancel: () => {
-            (d(!1), g && y(!1), E && b(!1));
+            (d(!1), g && y(!1), E && b(!1), qd(!1));
           },
           onSuccess: () => {
             (d(!1),
@@ -513,7 +519,9 @@ function Zg({
                   ? (a(t.id), b(!1))
                   : f
                     ? (s(t.id, f), p(null))
-                    : m(!0));
+                    : qe
+                      ? (_(!0), qd(!1))
+                      : m(!0));
           },
         }),
       g &&
@@ -2360,6 +2368,7 @@ function F0() {
     [me, ut] = A.useState(L0),
     [Oe, $] = A.useState(U0),
     [L, V] = A.useState(null),
+    [Ze, zd] = A.useState(null),
     Y = t.find((S) => S.id === s.id) || null,
     tt = (S) => e(S),
     xn = (S) => n(S);
@@ -2734,7 +2743,7 @@ function F0() {
                           subtitle: me.name
                             ? `${me.name} — ${me.year}`
                             : "Տարվա սովորողը դեռ չեն ընտրվել",
-                          onEdit: () => V("student"),
+                          onEdit: () => (Jg() ? V("student") : zd("student")),
                         }),
                         c.jsx(lu, {
                           emoji: "🥇",
@@ -2742,7 +2751,7 @@ function F0() {
                           subtitle: Oe.projectId
                             ? `${Oe.year} թ.`
                             : "Տարվա նախագիծը դեռ չեն ընտրվել",
-                          onEdit: () => V("project"),
+                          onEdit: () => (Jg() ? V("project") : zd("project")),
                         }),
                       ],
                     }),
@@ -2896,6 +2905,15 @@ function F0() {
           onCancel: () => a(null),
           onSuccess: () => {
             (o === "create" ? (w(""), f(""), v(""), u(!0)) : iu(o.id), a(null));
+          },
+        }),
+      Ze &&
+        c.jsx(Hi, {
+          title: "Խմբագրել մրցանակ",
+          pin: zi,
+          onCancel: () => zd(null),
+          onSuccess: () => {
+            (V(Ze), zd(null));
           },
         }),
       L === "student" &&
