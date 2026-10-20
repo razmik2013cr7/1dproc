@@ -1164,6 +1164,14 @@ function yc({
     })
   );
 }
+const SECTION_EXCERPT = 100;
+function cut100(t) {
+  const e = (t || "").trim();
+  if (e.length <= SECTION_EXCERPT) return e;
+  const r = e.slice(0, SECTION_EXCERPT),
+    n = r.lastIndexOf(" ");
+  return (n > 0 ? r.slice(0, n) : r) + "…";
+}
 function ev({
   section: t,
   items: e,
@@ -1180,6 +1188,8 @@ function ev({
     [w, k] = A.useState(""),
     [f, p] = A.useState(""),
     [v, _] = A.useState(""),
+    [q, z] = A.useState(!1),
+    [dt, pd] = A.useState(null),
     E = () => {
       (k(""), p(""), _(""));
     },
@@ -1253,7 +1263,14 @@ function ev({
                       className: "hero-card-body",
                       children: [
                         c.jsx("h3", { children: C.title }),
-                        C.body && c.jsx("p", { children: C.body }),
+                        C.body && c.jsx("p", { children: cut100(C.body) }),
+                        (C.body || C.photo) &&
+                          c.jsx("button", {
+                            type: "button",
+                            className: "chip hero-more",
+                            onClick: () => pd(C),
+                            children: "Կարդալ ավելին",
+                          }),
                       ],
                     }),
                     c.jsxs("div", {
@@ -1274,7 +1291,7 @@ function ev({
                             type: "button",
                             className: "chip chip-danger",
                             onClick: () => {
-                              (y(C), l(!0));
+                              (y(C), z(!0), l(!0));
                             },
                             disabled: o,
                             children: "🗑 Հեռացնել",
@@ -1289,12 +1306,21 @@ function ev({
           }),
       a &&
         c.jsx(Hi, {
-          title: g ? `Խմբագրել — ${t.title}` : `Ավելացնել — ${t.title}`,
+          title: q
+            ? `Հեռացնել — ${t.title}`
+            : g
+              ? `Խմբագրել — ${t.title}`
+              : `Ավելացնել — ${t.title}`,
           pin: g || t,
           onCancel: () => {
-            (l(!1), y(null));
+            (l(!1), y(null), z(!1));
           },
           onSuccess: () => {
+            if (q) {
+              const C = g;
+              (l(!1), z(!1), y(null), C && s(C.id));
+              return;
+            }
             (l(!1),
               g
                 ? (m(!0), k(g.title), p(g.body || ""), _(g.photo || ""))
@@ -1341,6 +1367,47 @@ function ev({
           onSave: b,
           saveDisabled: o || !w.trim(),
           busy: o,
+        }),
+      dt &&
+        c.jsx("div", {
+          className: "detail-overlay",
+          onClick: () => pd(null),
+          children: c.jsxs("div", {
+            className: "detail-card",
+            onClick: (C) => C.stopPropagation(),
+            children: [
+              c.jsx("button", {
+                type: "button",
+                className: "detail-close",
+                "aria-label": "Փակել",
+                onClick: () => pd(null),
+                children: "✕",
+              }),
+              c.jsx("div", {
+                className: "detail-media",
+                children: dt.photo
+                  ? c.jsx("img", { src: dt.photo, alt: dt.title })
+                  : c.jsx("div", {
+                      className: "detail-fallback " + t.grad,
+                      children: c.jsx("span", { children: t.emoji }),
+                    }),
+              }),
+              c.jsxs("div", {
+                className: "detail-body",
+                children: [
+                  c.jsx("h3", {
+                    className: "detail-title",
+                    children: dt.title,
+                  }),
+                  dt.body &&
+                    c.jsx("p", {
+                      className: "detail-text",
+                      children: dt.body,
+                    }),
+                ],
+              }),
+            ],
+          }),
         }),
     ],
   });
@@ -1405,6 +1472,9 @@ function wc({
                 className: "word-global-actions",
                 children: c.jsx("button", {
                   className: "word-global-btn primary",
+                  onClick: (E) => {
+                    (E.preventDefault(), h || m || d(E));
+                  },
                   children: t.startsWith("Նոր") ? "Ավելացնել" : "Խմբագրել",
                 }),
               }),
