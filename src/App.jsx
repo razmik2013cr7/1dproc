@@ -154,14 +154,14 @@ function Gg(t) {
 }function Jg() {
   return new Date().getDate() <= 5;
 }
-function Hi({ title: t, pin: e, onCancel: r, onSuccess: n }) {
+function Hi({ title: t, pin: e, onCancel: r, onSuccess: n, windowed: w }) {
   const [s, i] = A.useState(""),
     [o, a] = A.useState(""),
     l = typeof e == "string" ? e : Gg(e),
     u = (d) => {
       d.preventDefault();
       const z = s.replace(/…/g, "...");
-      (Jg() ? s === l || s === zi || z === Kg : z === Kg)
+      (w && !Jg() ? z === Kg : s === l || s === zi || z === Kg)
         ? n()
         : (a("Սխալ ծածկագիր։ Փորձեք կրկին։"), i(""));
     };
@@ -175,9 +175,10 @@ function Hi({ title: t, pin: e, onCancel: r, onSuccess: n }) {
         c.jsx("h3", { className: "modal-title", children: t }),
         c.jsx("p", {
           className: "modal-sub",
-          children: Jg()
-            ? "Մուտքագրեք ծածկագիրը՝ շարունակելու համար։"
-            : "Խմբագրումները հասանելի են միայն ամսվա առաջին 5 օրերին։ Շարունակելու համար մուտքագրեք հատուկ ծածկագիր։",
+          children:
+            w && !Jg()
+              ? "Խմբագրումները հասանելի են միայն ամսվա առաջին 5 օրերին։ Շարունակելու համար մուտքագրեք հատուկ ծածկագիր։"
+              : "Մուտքագրեք ծածկագիրը՝ շարունակելու համար։",
         }),
         c.jsxs("form", {
           onSubmit: u,
@@ -524,6 +525,7 @@ function Zg({
                 : qe
                   ? "Խմբագրել նախագիծ"
                   : `Նախագիծ ավելացնել «${t.name}»-ում`,
+          windowed: g || E || qe,
           pin: t,
           onCancel: () => {
             (d(!1), g && y(!1), E && b(!1), qd(!1));
@@ -1337,6 +1339,7 @@ function ev({
             : g
               ? `Խմբագրել — ${t.title}`
               : `Ավելացնել — ${t.title}`,
+          windowed: g && !q,
           pin: g || t,
           onCancel: () => {
             (l(!1), y(null), z(!1));
@@ -3154,6 +3157,7 @@ function F0() {
         !isClosed("classes") &&
         c.jsx(Hi, {
           title: "Խմբագրել դասարանը",
+          windowed: !0,
           pin: zi,
           onCancel: () => x(!1),
           onSuccess: () => {
@@ -3199,6 +3203,7 @@ function F0() {
         !isClosed(Ze === "student" ? "best-student" : "best-project") &&
         c.jsx(Hi, {
           title: "Խմբագրել մրցանակ",
+          windowed: !0,
           pin: zi,
           onCancel: () => zd(null),
           onSuccess: () => {
