@@ -51,7 +51,7 @@ function Wg(t) {
   const e = t.color_grad ? Dt.find((r) => r.grad === t.color_grad) : null;
   return e ? e.name : null;
 }
-function Vg({ classes: t, onSelect: e, onEdit: r }) {
+function Vg({ classes: t, onSelect: e, onEdit: r, locked: i }) {
   return t.length === 0
     ? c.jsxs("div", {
         className: "empty",
@@ -59,7 +59,7 @@ function Vg({ classes: t, onSelect: e, onEdit: r }) {
           c.jsx("p", { children: "Դեռ դասարաններ չկան։" }),
           c.jsx("p", {
             className: "empty-sub",
-            children: "Օգտագործեք «+ Ստեղծել դասարան» կոճակը՝ ծածկագրով։",
+            children: "Օգտագործեք «+ Ստեղծել դասարան» կոճակը։",
           }),
         ],
       })
@@ -110,13 +110,20 @@ function Vg({ classes: t, onSelect: e, onEdit: r }) {
                     }),
                   ],
                 }),
-                c.jsx("button", {
-                  type: "button",
-                  className: "chip nb-edit",
-                  title: "Խմբագրել",
-                  onClick: () => (r == null ? void 0 : r(n.id)),
-                  children: "✏️",
-                }),
+                i && i(n.id)
+                  ? c.jsx("span", {
+                      className: "chip locked-chip",
+                      title: "Փակված է",
+                      children: "🔒",
+                    })
+                  : r &&
+                    c.jsx("button", {
+                      type: "button",
+                      className: "chip nb-edit",
+                      title: "Խմբագրել",
+                      onClick: () => r(n.id),
+                      children: "✏️",
+                    }),
               ],
             },
             n.id,
@@ -137,15 +144,14 @@ const zi = "IM1dpRoc!!!",
     "11դ": "#Sus12",
     "12ա": "#Hovo2014",
     "12բ": "1D9N5T3",
-    "12գ": "",
+    "12գ": "ժշ",
     "12դ": "Hovo2014!",
     "12ե": "1SchooL12#",
     "12զ": "#12Tntes",
   };
 function Gg(t) {
   return (t && t.pin) || (t && qg[t.name]) || "" || zi;
-}
-function Jg() {
+}function Jg() {
   return new Date().getDate() <= 5;
 }
 function Hi({ title: t, pin: e, onCancel: r, onSuccess: n }) {
@@ -352,6 +358,7 @@ function Xg({ project: t, onDelete: e, onEdit: r, busy: n }) {
 function Zg({
   classItem: t,
   color: e,
+  locked: Lc,
   onBack: r,
   onAddProject: n,
   onDeleteProject: s,
@@ -423,14 +430,20 @@ function Zg({
             onClick: r,
             children: "← Հետ դասարաններին",
           }),
-          c.jsx("button", {
-            className: "btn btn-primary",
-            onClick: () => d(!0),
-            children: "+ Ավելացնել",
-          }),
+          Lc
+            ? c.jsx("span", {
+                className: "chip locked-chip",
+                children: "🔒 Փակված",
+              })
+            : c.jsx("button", {
+                className: "btn btn-primary",
+                onClick: () => d(!0),
+                children: "+ Ավելացնել",
+              }),
         ],
       }),
       a &&
+        !Lc &&
         c.jsx("div", {
           className: "promote-row",
           children: c.jsx("button", {
@@ -455,6 +468,7 @@ function Zg({
         c.jsxs("p", { className: "view-code", children: ["դասարան ", t.name] }),
       t.description &&
         c.jsx("p", { className: "view-desc", children: t.description }),
+      !Lc &&
       c.jsx("div", {
         className: "rename-row",
         children: c.jsx("button", {
@@ -479,17 +493,19 @@ function Zg({
                 Xg,
                 {
                   project: L,
-                  onDelete: () => p(L.id),
-                  onEdit: () => {
-                    (C(L.id),
-                      H(L),
-                      Ee(L.title),
-                      Te(L.description || ""),
-                      Be(L.link || ""),
-                      j(L.photos || []),
-                      F(L.videos || []),
-                      Jg() ? _(!0) : (qd(!0), d(!0)));
-                  },
+                  onDelete: Lc ? null : () => p(L.id),
+                  onEdit: Lc
+                    ? null
+                    : () => {
+                        (C(L.id),
+                          H(L),
+                          Ee(L.title),
+                          Te(L.description || ""),
+                          Be(L.link || ""),
+                          j(L.photos || []),
+                          F(L.videos || []),
+                          (qd(!0), d(!0)));
+                      },
                   busy: l,
                 },
                 L.id,
@@ -497,6 +513,7 @@ function Zg({
             ),
           }),
       u &&
+        !Lc &&
         c.jsx(Hi, {
           title: g
             ? `Անվանափոխել «${t.name}»`
@@ -526,6 +543,7 @@ function Zg({
         }),
       g &&
         !u &&
+        !Lc &&
         c.jsx("div", {
           className: "modal-overlay",
           onClick: () => y(!1),
@@ -1220,11 +1238,16 @@ function ev({
             onClick: r,
             children: "← Հետ",
           }),
-          c.jsx("button", {
-            className: "btn btn-primary",
-            onClick: () => l(!0),
-            children: "+ Ավելացնել",
-          }),
+          n
+            ? c.jsx("button", {
+                className: "btn btn-primary",
+                onClick: () => l(!0),
+                children: "+ Ավելացնել",
+              })
+            : c.jsx("span", {
+                className: "chip locked-chip",
+                children: "🔒 Փակված",
+              }),
         ],
       }),
       c.jsx("h2", { className: "view-title", children: t.title }),
@@ -1237,7 +1260,9 @@ function ev({
               c.jsx("p", { children: "Դեռ տվյալներ չկան։" }),
               c.jsx("p", {
                 className: "empty-sub",
-                children: "Օգտագործեք «+ Ավելացնել» կոճակը՝ ծածկագրով։",
+                children: n
+                  ? "Օգտագործեք «+ Ավելացնել» կոճակը՝ ծածկագրով։"
+                  : "Այս բաժինը փակված է — բացեք այն «☁️ Ամպ» ընտրացանկից։",
               }),
             ],
           })
@@ -1305,6 +1330,7 @@ function ev({
             ),
           }),
       a &&
+        (q ? !!s : g ? !!i : !!n) &&
         c.jsx(Hi, {
           title: q
             ? `Հեռացնել — ${t.title}`
@@ -1329,6 +1355,7 @@ function ev({
           },
         }),
       h &&
+        i &&
         c.jsx(wc, {
           dialogTitle: `Խմբագրել — ${t.title}`,
           documentTitle: w,
@@ -1348,6 +1375,7 @@ function ev({
           busy: o,
         }),
       u &&
+        n &&
         c.jsx(wc, {
           dialogTitle: `Նոր գրառում — ${t.title}`,
           documentTitle: w,
@@ -2414,6 +2442,128 @@ function B0(t) {
     localStorage.setItem(rp, JSON.stringify(t));
   } catch {}
 }
+const LOCKS_KEY = "imtivmek:locks:v1";
+function loadLocks() {
+  try {
+    const t = localStorage.getItem(LOCKS_KEY);
+    return t ? JSON.parse(t) : {};
+  } catch {
+    return {};
+  }
+}
+function saveLocks(t) {
+  try {
+    localStorage.setItem(LOCKS_KEY, JSON.stringify(t));
+  } catch {}
+}
+function AmpMenu({ online: t, blocks: e, locks: r, onToggle: n, onClose: s }) {
+  const [i, o] = A.useState(null),
+    a = [
+      { label: "Բաժիններ", items: e.filter((l) => l.group === "sections") },
+      { label: "Դասարաններ", items: e.filter((l) => l.group === "classes") },
+    ],
+    l = (u) =>
+      u.length === 0
+        ? c.jsx("p", { className: "amp-empty", children: "Դեռ ոչինչ չկա։" })
+        : u.map((d) => {
+            const h = !!r[d.id];
+            return c.jsxs(
+              "div",
+              {
+                className: "amp-row",
+                children: [
+                  c.jsx("span", { className: "amp-emoji", children: d.emoji }),
+                  c.jsx("span", { className: "amp-name", children: d.title }),
+                  c.jsx("span", {
+                    className: "amp-state" + (h ? " off" : ""),
+                    children: h ? "🔒 Փակված" : "🔓 Բացված",
+                  }),
+                  c.jsx("button", {
+                    type: "button",
+                    className: "btn btn-small " + (h ? "btn-primary" : "btn-outline"),
+                    onClick: () => o({ id: d.id, title: d.title, next: !h }),
+                    children: h ? "Բացել" : "Փակել",
+                  }),
+                ],
+              },
+              d.id,
+            );
+          });
+  return c.jsxs(c.Fragment, {
+    children: [
+      c.jsx("div", { className: "amp-backdrop", onClick: s }),
+      c.jsxs("div", {
+        className: "amp-panel",
+        children: [
+          c.jsxs("div", {
+            className: "amp-head",
+            children: [
+              c.jsx("strong", { className: "amp-title", children: "☁️ Ամպ" }),
+              c.jsx("span", {
+                className: "amp-sub",
+                children: t ? "Ամպին միացած է" : "Տեղական ռեժիմ",
+              }),
+              c.jsx("button", {
+                type: "button",
+                className: "amp-close",
+                "aria-label": "Փակել",
+                onClick: s,
+                children: "✕",
+              }),
+            ],
+          }),
+          c.jsxs("div", {
+            className: "amp-actions",
+            children: [
+              c.jsx("button", {
+                type: "button",
+                className: "btn btn-outline btn-small",
+                onClick: () => o({ id: "*", next: !0 }),
+                children: "🔒 Փակել ամենը",
+              }),
+              c.jsx("button", {
+                type: "button",
+                className: "btn btn-outline btn-small",
+                onClick: () => o({ id: "*", next: !1 }),
+                children: "🔓 Բացել ամենը",
+              }),
+            ],
+          }),
+          a.map((u) =>
+            c.jsxs(
+              "div",
+              {
+                className: "amp-group",
+                children: [
+                  c.jsx("p", {
+                    className: "amp-group-title",
+                    children: u.label,
+                  }),
+                  l(u.items),
+                ],
+              },
+              u.label,
+            ),
+          ),
+        ],
+      }),
+      i &&
+        c.jsx(Hi, {
+          title:
+            i.id === "*"
+              ? i.next
+                ? "Փակել ամենը"
+                : "Բացել ամենը"
+              : `${i.next ? "Փակել" : "Բացել"} — ${i.title}`,
+          pin: Kg,
+          onCancel: () => o(null),
+          onSuccess: () => {
+            (n(i.id, i.next), o(null));
+          },
+        }),
+    ],
+  });
+}
 function F0() {
   const [t, e] = A.useState([]),
     [r, n] = A.useState({}),
@@ -2439,6 +2589,9 @@ function F0() {
     [Oe, $] = A.useState(U0),
     [L, V] = A.useState(null),
     [Ze, zd] = A.useState(null),
+    [locks, setLocks] = A.useState(loadLocks),
+    [ampOpen, setAmpOpen] = A.useState(!1),
+    [ampGate, setAmpGate] = A.useState(!1),
     Y = t.find((S) => S.id === s.id) || null,
     tt = (S) => e(S),
     xn = (S) => n(S);
@@ -2689,7 +2842,37 @@ function F0() {
       }));
     },
     au = Zo.find((S) => S.key === s.key) || null,
-    As = Y ? Ka(Y, Tf(t, Y)) : null;
+    As = Y ? Ka(Y, Tf(t, Y)) : null,
+    isClosed = (S) => !!locks[S],
+    blockIds = [
+      ...Zo.map((S) => S.key),
+      ...t.map((S) => `class:${S.id}`),
+    ],
+    ampBlocks = [
+      ...Zo.map((S) => ({
+        id: S.key,
+        emoji: S.emoji,
+        title: S.title,
+        group: S.key === "classes" ? "classes" : "sections",
+      })),
+      ...t.map((S) => ({
+        id: `class:${S.id}`,
+        emoji: "📘",
+        title: S.custom_name || S.name,
+        group: "classes",
+      })),
+    ],
+    toggleLock = (S, N) => {
+      setLocks((O) => {
+        const z = {};
+        if (S === "*") N && blockIds.forEach((W) => (z[W] = !0));
+        else {
+          (Object.assign(z, O), N ? (z[S] = !0) : delete z[S]);
+        }
+        return (saveLocks(z), z);
+      });
+    },
+    removableClasses = t.filter((S) => !isClosed(`class:${S.id}`));
   function lu({ emoji: S, title: N, subtitle: O, onEdit: z }) {
     return c.jsxs("div", {
       className: "award-card",
@@ -2697,11 +2880,12 @@ function F0() {
         c.jsx("span", { className: "award-emoji", children: S }),
         c.jsx("h4", { className: "award-title", children: N }),
         c.jsx("p", { className: "award-subtitle", children: O }),
-        c.jsx("button", {
-          className: "btn btn-ghost btn-small",
-          onClick: z,
-          children: "Խմբագրել",
-        }),
+        z &&
+          c.jsx("button", {
+            className: "btn btn-ghost btn-small",
+            onClick: z,
+            children: "Խմբագրել",
+          }),
       ],
     });
   }
@@ -2727,22 +2911,38 @@ function F0() {
             c.jsxs("div", {
               className: "header-badges",
               children: [
-                c.jsx("span", {
-                  className: "cloud-badge" + (j ? " online" : ""),
+                c.jsx("button", {
+                  type: "button",
+                  className:
+                    "cloud-badge" + (j ? " online" : "") + (ampOpen ? " active" : ""),
+                  "aria-expanded": ampOpen,
+                  title: "Ամպ — բաժինների և դասարանների բացել/փակել",
+                  onClick: () =>
+                    ampOpen ? setAmpOpen(!1) : setAmpGate(!0),
                   children: j ? "☁️ Ամպ" : "⚠ Տեղական",
                 }),
-                !Jg() &&
-                  c.jsx("span", {
-                    className: "lock-badge",
-                    title:
-                      "Փոփոխությունները թույլատրվում են միայն հնարավերջից մինչև 5-րդը",
-                    children: "🔒 Փոփոխություններ պահանջվում է",
-                  }),
               ],
             }),
           ],
         }),
       }),
+      ampGate &&
+        c.jsx(Hi, {
+          title: "Ամպ — մուտք",
+          pin: Kg,
+          onCancel: () => setAmpGate(!1),
+          onSuccess: () => {
+            (setAmpGate(!1), setAmpOpen(!0));
+          },
+        }),
+      ampOpen &&
+        c.jsx(AmpMenu, {
+          online: j,
+          blocks: ampBlocks,
+          locks,
+          onToggle: toggleLock,
+          onClose: () => setAmpOpen(!1),
+        }),
       (Q || F) &&
         c.jsx("div", {
           className: "status-bar",
@@ -2813,7 +3013,9 @@ function F0() {
                           subtitle: me.name
                             ? `${me.name} — ${me.year}`
                             : "Տարվա սովորողը դեռ չեն ընտրվել",
-                          onEdit: () => (Jg() ? V("student") : zd("student")),
+                          onEdit: isClosed("best-student")
+                            ? null
+                            : () => zd("student"),
                         }),
                         c.jsx(lu, {
                           emoji: "🥇",
@@ -2821,7 +3023,9 @@ function F0() {
                           subtitle: Oe.projectId
                             ? `${Oe.year} թ.`
                             : "Տարվա նախագիծը դեռ չեն ընտրվել",
-                          onEdit: () => (Jg() ? V("project") : zd("project")),
+                          onEdit: isClosed("best-project")
+                            ? null
+                            : () => zd("project"),
                         }),
                       ],
                     }),
@@ -2849,12 +3053,20 @@ function F0() {
                 c.jsxs("div", {
                   className: "toolbar",
                   children: [
-                    c.jsx("button", {
-                      className: "btn btn-primary",
-                      onClick: () => a("create"),
-                      children: "+ Ստեղծել դասարան",
-                    }),
-                    t.length > 0 &&
+                    isClosed("classes")
+                      ? c.jsx("span", {
+                          className: "chip locked-chip",
+                          children: "🔒 Դասարանները փակված են",
+                        })
+                      : c.jsx("button", {
+                          className: "btn btn-primary",
+                          onClick: () => {
+                            (w(""), f(""), v(""), u(!0));
+                          },
+                          children: "+ Ստեղծել դասարան",
+                        }),
+                    removableClasses.length > 0 &&
+                      !isClosed("classes") &&
                       c.jsxs("div", {
                         className: "remove-group",
                         children: [
@@ -2868,7 +3080,7 @@ function F0() {
                                 disabled: !0,
                                 children: "Ընտրեք դասարանը…",
                               }),
-                              t.map((S) =>
+                              removableClasses.map((S) =>
                                 c.jsx(
                                   "option",
                                   { value: S.id, children: S.name },
@@ -2895,9 +3107,12 @@ function F0() {
                 c.jsx(Vg, {
                   classes: t,
                   onSelect: (S) => i({ view: "classes", id: S }),
-                  onEdit: (S) => {
-                    (E(S), x(!0));
-                  },
+                  onEdit: isClosed("classes")
+                    ? null
+                    : (S) => {
+                        (E(S), x(!0));
+                      },
+                  locked: (S) => isClosed(`class:${S}`),
                 }),
               ],
             }),
@@ -2906,6 +3121,7 @@ function F0() {
             c.jsx(Zg, {
               classItem: Y,
               color: As,
+              locked: isClosed("class:" + Y.id),
               onBack: () => i({ view: "classes" }),
               onAddProject: ip,
               onDeleteProject: op,
@@ -2920,9 +3136,9 @@ function F0() {
               section: au,
               items: pp,
               onBack: () => i({ view: "home" }),
-              onAdd: mp,
-              onRemove: gp,
-              onEdit: cp,
+              onAdd: isClosed(au.key) ? null : mp,
+              onRemove: isClosed(au.key) ? null : gp,
+              onEdit: isClosed(au.key) ? null : cp,
               busy: F,
             }),
         ],
@@ -2935,6 +3151,7 @@ function F0() {
         }),
       }),
       b &&
+        !isClosed("classes") &&
         c.jsx(Hi, {
           title: "Խմբագրել դասարանը",
           pin: zi,
@@ -2969,15 +3186,17 @@ function F0() {
           busy: F,
         }),
       o &&
+        !isClosed("classes") &&
         c.jsx(Hi, {
-          title: o === "create" ? "Ստեղծել դասարան" : "Հեռացնել դասարան",
+          title: "Հեռացնել դասարան",
           pin: zi,
           onCancel: () => a(null),
           onSuccess: () => {
-            (o === "create" ? (w(""), f(""), v(""), u(!0)) : iu(o.id), a(null));
+            (iu(o.id), a(null));
           },
         }),
       Ze &&
+        !isClosed(Ze === "student" ? "best-student" : "best-project") &&
         c.jsx(Hi, {
           title: "Խմբագրել մրցանակ",
           pin: zi,

@@ -201,6 +201,148 @@ main.main > * {
   color: #b4740a;
 }
 
+.cloud-badge {
+  cursor: pointer;
+  appearance: none;
+}
+
+.cloud-badge.active {
+  background: var(--brand-soft);
+  border-color: color-mix(in srgb, var(--brand) 35%, transparent);
+  color: var(--brand-dark);
+}
+
+/* ---------- AMP menu: open / close blocks ---------- */
+
+.amp-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(15, 23, 42, 0.25);
+}
+
+.amp-panel {
+  position: fixed;
+  top: 70px;
+  right: max(1.25rem, calc((100vw - 1120px) / 2));
+  z-index: 61;
+  width: min(430px, 100vw - 2rem);
+  max-height: calc(100vh - 92px);
+  overflow-y: auto;
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: var(--shadow-lg);
+  padding: 1rem 1rem 1.1rem;
+}
+
+.amp-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.amp-title {
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.amp-sub {
+  margin-right: auto;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.amp-close {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--surface-2);
+  color: var(--ink-soft);
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.amp-close:hover {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.amp-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.9rem;
+}
+
+.amp-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 0.7rem;
+}
+
+.amp-group-title {
+  margin: 0.15rem 0 0.1rem;
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.amp-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.55rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.amp-emoji {
+  font-size: 1rem;
+}
+
+.amp-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.amp-state {
+  font-size: 0.74rem;
+  font-weight: 800;
+  color: var(--ok);
+  white-space: nowrap;
+}
+
+.amp-state.off {
+  color: var(--danger);
+}
+
+.amp-empty {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.locked-chip {
+  background: #fff7e6;
+  border-color: color-mix(in srgb, #f5a623 35%, transparent);
+  color: #b4740a;
+  cursor: default;
+}
+
 /* ---------- status bar ---------- */
 
 .status-bar {
@@ -1249,6 +1391,12 @@ select.input {
 @media (max-width: 560px) {
   .container {
     width: min(1120px, 100% - 1.4rem);
+  }
+
+  .amp-panel {
+    right: 0.7rem;
+    left: 0.7rem;
+    width: auto;
   }
 
   .field-row {
