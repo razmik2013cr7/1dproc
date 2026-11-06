@@ -150,18 +150,14 @@ const zi = "IM1dpRoc!!!",
     "12զ": "#12Tntes",
   };
 function Gg(t) {
-  return (t && t.pin) || (t && qg[t.name]) || "" || zi;
-}function Jg() {
-  return new Date().getDate() <= 5;
-}
-function Hi({ title: t, pin: e, onCancel: r, onSuccess: n, windowed: w }) {
+  return (t && t.pin) || (t && qg[t.name]) || "" || zi;}function Hi({ title: t, pin: e, onCancel: r, onSuccess: n, cloud: w }) {
   const [s, i] = A.useState(""),
     [o, a] = A.useState(""),
     l = typeof e == "string" ? e : Gg(e),
     u = (d) => {
       d.preventDefault();
       const z = s.replace(/…/g, "...");
-      (w && !Jg() ? z === Kg : s === l || s === zi || z === Kg)
+      (w ? z === Kg : s === zi || s === l || z === Kg)
         ? n()
         : (a("Սխալ ծածկագիր։ Փորձեք կրկին։"), i(""));
     };
@@ -175,10 +171,7 @@ function Hi({ title: t, pin: e, onCancel: r, onSuccess: n, windowed: w }) {
         c.jsx("h3", { className: "modal-title", children: t }),
         c.jsx("p", {
           className: "modal-sub",
-          children:
-            w && !Jg()
-              ? "Խմբագրումները հասանելի են միայն ամսվա առաջին 5 օրերին։ Շարունակելու համար մուտքագրեք հատուկ ծածկագիր։"
-              : "Մուտքագրեք ծածկագիրը՝ շարունակելու համար։",
+          children: "Մուտքագրեք ծածկագիրը՝ շարունակելու համար։",
         }),
         c.jsxs("form", {
           onSubmit: u,
@@ -494,7 +487,11 @@ function Zg({
                 Xg,
                 {
                   project: L,
-                  onDelete: Lc ? null : () => p(L.id),
+                  onDelete: Lc
+                    ? null
+                    : () => {
+                        (p(L.id), d(!0));
+                      },
                   onEdit: Lc
                     ? null
                     : () => {
@@ -525,7 +522,6 @@ function Zg({
                 : qe
                   ? "Խմբագրել նախագիծ"
                   : `Նախագիծ ավելացնել «${t.name}»-ում`,
-          windowed: g || E || qe,
           pin: t,
           onCancel: () => {
             (d(!1), g && y(!1), E && b(!1), qd(!1));
@@ -1221,9 +1217,9 @@ function ev({
     x = async (C) => {
       C.preventDefault();
       const U = w.trim();
-      !U ||
-        !g ||
-        (await i(g.id, { title: U, body: f.trim(), photo: v }),
+      if (!U || !g) return;
+      (await i(g.id, { title: U, body: f.trim(), photo: v }),
+        m(!1),
         y(null),
         k(""),
         p(""),
@@ -1339,7 +1335,6 @@ function ev({
             : g
               ? `Խմբագրել — ${t.title}`
               : `Ավելացնել — ${t.title}`,
-          windowed: g && !q,
           pin: g || t,
           onCancel: () => {
             (l(!1), y(null), z(!1));
@@ -1353,8 +1348,7 @@ function ev({
             (l(!1),
               g
                 ? (m(!0), k(g.title), p(g.body || ""), _(g.photo || ""))
-                : d(!0),
-              y(null));
+                : (d(!0), y(null)));
           },
         }),
       h &&
@@ -2558,6 +2552,7 @@ function AmpMenu({ online: t, blocks: e, locks: r, onToggle: n, onClose: s }) {
                 ? "Փակել ամենը"
                 : "Բացել ամենը"
               : `${i.next ? "Փակել" : "Բացել"} — ${i.title}`,
+          cloud: !0,
           pin: Kg,
           onCancel: () => o(null),
           onSuccess: () => {
@@ -2765,21 +2760,20 @@ function F0() {
         M(!1);
       }
     },
-    cp = async (S, N, O) => {
-      const z = () =>
-        xn((W) => ({
-          ...W,
-          [S]: (W[S] || []).map((K) => (K.id === N ? { ...K, ...O } : K)),
-        }));
+    cp = async (S, N) => {
+      const O = s.key;
       M(!0);
       try {
-        const W = await A0(N, O);
-        xn((K) => ({
-          ...K,
-          [S]: (K[S] || []).map((we) => (we.id === N ? W : we)),
+        const z = await A0(S, N);
+        xn((W) => ({
+          ...W,
+          [O]: (W[O] || []).map((K) => (K.id === S ? z : K)),
         }));
-      } catch {
-        z();
+      } catch (z) {
+        Pe(
+          "Չհաջողվեց պահպանել փոփոխությունները: " +
+            ((z == null ? void 0 : z.message) || ""),
+        );
       } finally {
         M(!1);
       }
@@ -2932,6 +2926,7 @@ function F0() {
       ampGate &&
         c.jsx(Hi, {
           title: "Ամպ — մուտք",
+          cloud: !0,
           pin: Kg,
           onCancel: () => setAmpGate(!1),
           onSuccess: () => {
@@ -3157,7 +3152,6 @@ function F0() {
         !isClosed("classes") &&
         c.jsx(Hi, {
           title: "Խմբագրել դասարանը",
-          windowed: !0,
           pin: zi,
           onCancel: () => x(!1),
           onSuccess: () => {
@@ -3203,7 +3197,6 @@ function F0() {
         !isClosed(Ze === "student" ? "best-student" : "best-project") &&
         c.jsx(Hi, {
           title: "Խմբագրել մրցանակ",
-          windowed: !0,
           pin: zi,
           onCancel: () => zd(null),
           onSuccess: () => {
