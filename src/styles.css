@@ -587,6 +587,50 @@ main.main > * {
   margin-bottom: 1.5rem;
 }
 
+.timebar {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+  margin: -0.6rem 0 1.5rem;
+}
+
+.timebar-label {
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: var(--ink-soft);
+}
+
+.timebar .input.select {
+  min-width: 0;
+}
+
+.snapshot-chip {
+  background: var(--brand-soft);
+  border-color: color-mix(in srgb, var(--brand) 35%, transparent);
+  color: var(--brand-dark);
+  cursor: default;
+}
+
+.snapshot-clear {
+  background: transparent;
+  border: 0;
+  padding: 0 0.1rem;
+  font: inherit;
+  font-weight: 800;
+  color: inherit;
+  cursor: pointer;
+  opacity: 0.75;
+}
+
+.snapshot-clear:hover {
+  opacity: 1;
+}
+
+.field-row-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
 .remove-group,
 .promote-row,
 .rename-row {
@@ -865,6 +909,12 @@ select.input {
   color: var(--muted);
 }
 
+.nb-date {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+
 .nb-count {
   margin-top: auto;
   align-self: flex-start;
@@ -922,6 +972,19 @@ select.input {
   margin: 0 0 1.4rem;
   color: var(--muted);
   max-width: 60ch;
+}
+
+.view-snapshot {
+  margin: -0.6rem 0 1.4rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: var(--brand-soft);
+  color: var(--brand-dark);
+  border-radius: 999px;
+  padding: 0.3rem 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 700;
 }
 
 /* ---------- project cards ---------- */

@@ -102,6 +102,11 @@ function Vg({ classes: t, onSelect: e, onEdit: r, locked: i }) {
                             className: "nb-desc",
                             children: n.description,
                           }),
+                        snapshotLabel(n) &&
+                          c.jsx("span", {
+                            className: "nb-date",
+                            children: "🗓 " + snapshotLabel(n),
+                          }),
                         c.jsxs("span", {
                           className: "nb-count",
                           children: [n.projects.length, " նախագիծ"],
@@ -150,7 +155,78 @@ const zi = "IM1dpRoc!!!",
     "12զ": "#12Tntes",
   };
 function Gg(t) {
-  return (t && t.pin) || (t && qg[t.name]) || "" || zi;}function Hi({ title: t, pin: e, onCancel: r, onSuccess: n, cloud: w }) {
+  return (t && t.pin) || (t && qg[t.name]) || "" || zi;}
+const MONTH_NAMES = [
+    "Հունվար",
+    "Փետրվար",
+    "Մարտ",
+    "Ապրիլ",
+    "Մայիս",
+    "Հունիս",
+    "Հուլիս",
+    "Օգոստոս",
+    "Սեպտեմբեր",
+    "Հոկտեմբեր",
+    "Նոյեմբեր",
+    "Դեկտեմբեր",
+  ],
+  ACADEMIC_YEARS = [
+    "2023–2024",
+    "2024–2025",
+    "2025–2026",
+    "2026–2027",
+    "2027–2028",
+    "2028–2029",
+    "2029–2030",
+    "2030–2031",
+  ];
+function academicYearForDate(t) {
+  const e = t.getMonth() + 1;
+  return e >= 9
+    ? `${t.getFullYear()}–${t.getFullYear() + 1}`
+    : `${t.getFullYear() - 1}–${t.getFullYear()}`;
+}
+function academicStartYear(t) {
+  const e = String(t || "").match(/^(\d{4})/);
+  return e ? Number(e[1]) : new Date().getFullYear();
+}
+function calendarYearFor(t, e) {
+  return e >= 9 ? academicStartYear(t) : academicStartYear(t) + 1;
+}
+function daysInMonthFor(t, e) {
+  return new Date(calendarYearFor(t, e), e, 0).getDate();
+}
+function snapshotKey(t, e, r) {
+  return calendarYearFor(t, e) * 10000 + e * 100 + r;
+}
+function classSnapshot(t) {
+  if (!t) return null;
+  if (t.academic_year && t.academic_month && t.academic_day)
+    return {
+      year: t.academic_year,
+      month: Number(t.academic_month),
+      day: Number(t.academic_day),
+      key: snapshotKey(
+        t.academic_year,
+        Number(t.academic_month),
+        Number(t.academic_day),
+      ),
+    };
+  const e = t.created_at ? new Date(t.created_at) : null;
+  if (!e || isNaN(e.getTime())) return null;
+  const r = e.getMonth() + 1,
+    n = e.getDate(),
+    s = academicYearForDate(e);
+  return { year: s, month: r, day: n, key: snapshotKey(s, r, n) };
+}
+function datePartsLabel(t, e, r) {
+  return `${r} ${MONTH_NAMES[e - 1]} ${calendarYearFor(t, e)}`;
+}
+function snapshotLabel(t) {
+  const e = classSnapshot(t);
+  return e ? datePartsLabel(e.year, e.month, e.day) : "";
+}
+function Hi({ title: t, pin: e, onCancel: r, onSuccess: n, cloud: w }) {
   const [s, i] = A.useState(""),
     [o, a] = A.useState(""),
     l = typeof e == "string" ? e : Gg(e),
@@ -360,6 +436,7 @@ function Zg({
   onEditProject: o,
   onPromote: a,
   busy: l,
+  asOfSnapshot: Sn,
 }) {
   const [u, d] = A.useState(!1),
     [h, m] = A.useState(!1),
@@ -413,6 +490,22 @@ function Zg({
       };
       (o(t.id, x, V), _(!1));
     };
+  const snapshotEnd = Sn
+      ? new Date(
+          calendarYearFor(Sn.year, Sn.month),
+          Sn.month - 1,
+          Sn.day,
+          23,
+          59,
+          59,
+        ).getTime()
+      : null,
+    listedProjects = t.projects.filter(
+      (L) =>
+        !snapshotEnd ||
+        !L.created_at ||
+        new Date(L.created_at).getTime() <= snapshotEnd,
+    );
   return c.jsxs("div", {
     className: "class-view",
     children: [
@@ -462,6 +555,15 @@ function Zg({
         c.jsxs("p", { className: "view-code", children: ["դասարան ", t.name] }),
       t.description &&
         c.jsx("p", { className: "view-desc", children: t.description }),
+      Sn &&
+        c.jsxs("p", {
+          className: "view-snapshot",
+          children: [
+            "🗓 Դասարանն այս վիճակում էր՝ ",
+            datePartsLabel(Sn.year, Sn.month, Sn.day),
+            " թ.",
+          ],
+        }),
       !Lc &&
       c.jsx("div", {
         className: "rename-row",
@@ -473,16 +575,18 @@ function Zg({
           children: "✏️ Անվանափոխել",
         }),
       }),
-      t.projects.length === 0
+      listedProjects.length === 0
         ? c.jsx("div", {
             className: "empty",
             children: c.jsx("p", {
-              children: "Այս դասարանում դեռ նախագծեր չկան։",
+              children: Sn
+                ? "Այդ օրը դասարանում դեռ նախագծեր չկային։"
+                : "Այս դասարանում դեռ նախագծեր չկան։",
             }),
           })
         : c.jsx("div", {
             className: "project-grid",
-            children: t.projects.map((L) =>
+            children: listedProjects.map((L) =>
               c.jsx(
                 Xg,
                 {
@@ -2176,6 +2280,7 @@ function eu(t) {
     link: t.link || "",
     photos: Array.isArray(t.photos) ? t.photos : [],
     videos: Array.isArray(t.videos) ? t.videos : [],
+    created_at: t.created_at || "",
   };
 }
 function tu(t, e = []) {
@@ -2186,6 +2291,10 @@ function tu(t, e = []) {
     color: t.color || "",
     pin: t.pin || "",
     custom_name: t.custom_name || "",
+    academic_year: t.academic_year || "",
+    academic_month: t.academic_month || 0,
+    academic_day: t.academic_day || 0,
+    created_at: t.created_at || "",
     projects: e.filter((r) => String(r.class_id) === String(t.id)).map(eu),
   };
 }
@@ -2239,7 +2348,7 @@ async function b0(t) {
   const e = await Promise.all(t.map(async (r) => [r, await S0(r)]));
   return Object.fromEntries(e);
 }
-async function dd(t, e, r, n, s) {
+async function dd(t, e, r, n, s, y, M, D) {
   const { data: i, error: o } = await ue
     .from("classes")
     .insert([
@@ -2249,6 +2358,9 @@ async function dd(t, e, r, n, s) {
         color: r || "",
         pin: n || "",
         custom_name: s || "",
+        academic_year: y || "",
+        academic_month: M ? Number(M) : null,
+        academic_day: D ? Number(D) : null,
       },
     ])
     .select()
@@ -2590,6 +2702,16 @@ function F0() {
     [locks, setLocks] = A.useState(loadLocks),
     [ampOpen, setAmpOpen] = A.useState(!1),
     [ampGate, setAmpGate] = A.useState(!1),
+    [newGate, setNewGate] = A.useState(!1),
+    [acYear, setAcYear] = A.useState(() => academicYearForDate(new Date())),
+    [acMonth, setAcMonth] = A.useState(() => new Date().getMonth() + 1),
+    [acDay, setAcDay] = A.useState(() => new Date().getDate()),
+    [asOf, setAsOf] = A.useState(null),
+    [ttYear, setTtYear] = A.useState(() => academicYearForDate(new Date())),
+    [ttMonth, setTtMonth] = A.useState(() => new Date().getMonth() + 1),
+    [ttDay, setTtDay] = A.useState(() => new Date().getDate()),
+    [timeGate, setTimeGate] = A.useState(!1),
+    [timeOpen, setTimeOpen] = A.useState(!1),
     Y = t.find((S) => S.id === s.id) || null,
     tt = (S) => e(S),
     xn = (S) => n(S);
@@ -2643,10 +2765,12 @@ function F0() {
       }
       const O = Hg(t),
         z = k.trim(),
-        W = p.trim();
+        W = p.trim(),
+        acMo = Number(acMonth) || 1,
+        acDa = Math.min(Number(acDay) || 1, daysInMonthFor(acYear, acMo));
       M(!0);
       try {
-        const K = await dd(N, y.trim(), O.name, z, W);
+        const K = await dd(N, y.trim(), O.name, z, W, acYear, acMo, acDa);
         (e((we) => [...we, K]), u(!1), w(""), f(""), v(""));
       } catch (K) {
         if (String(K == null ? void 0 : K.code) === "23505")
@@ -2869,7 +2993,13 @@ function F0() {
         return (saveLocks(z), z);
       });
     },
-    removableClasses = t.filter((S) => !isClosed(`class:${S.id}`));
+    removableClasses = t.filter((S) => !isClosed(`class:${S.id}`)),
+    asOfClasses = asOf
+      ? t.filter((S) => {
+          const N = classSnapshot(S);
+          return N ? N.key <= asOf.key : !0;
+        })
+      : t;
   function lu({ emoji: S, title: N, subtitle: O, onEdit: z }) {
     return c.jsxs("div", {
       className: "award-card",
@@ -2931,6 +3061,34 @@ function F0() {
           onCancel: () => setAmpGate(!1),
           onSuccess: () => {
             (setAmpGate(!1), setAmpOpen(!0));
+          },
+        }),
+      newGate &&
+        c.jsx(Hi, {
+          title: "Նոր դասարան — մուտք",
+          pin: zi,
+          onCancel: () => setNewGate(!1),
+          onSuccess: () => {
+            const S = new Date();
+            (setNewGate(!1),
+              w(""),
+              f(""),
+              v(""),
+              h("10"),
+              g("ա"),
+              setAcYear(academicYearForDate(S)),
+              setAcMonth(S.getMonth() + 1),
+              setAcDay(S.getDate()),
+              u(!0));
+          },
+        }),
+      timeGate &&
+        c.jsx(Hi, {
+          title: "Օրվա վիճակ — մուտք",
+          pin: zi,
+          onCancel: () => setTimeGate(!1),
+          onSuccess: () => {
+            (setTimeGate(!1), setTimeOpen(!0));
           },
         }),
       ampOpen &&
@@ -3058,9 +3216,7 @@ function F0() {
                         })
                       : c.jsx("button", {
                           className: "btn btn-primary",
-                          onClick: () => {
-                            (w(""), f(""), v(""), u(!0));
-                          },
+                          onClick: () => setNewGate(!0),
                           children: "+ Ստեղծել դասարան",
                         }),
                     removableClasses.length > 0 &&
@@ -3100,10 +3256,90 @@ function F0() {
                           }),
                         ],
                       }),
+                    c.jsx("button", {
+                      type: "button",
+                      className: "btn btn-outline btn-small",
+                      onClick: () => setTimeGate(!0),
+                      children: "🗓 Օրվա վիճակ",
+                    }),
+                  ],
+                }),
+                timeOpen &&
+                  c.jsxs("div", {
+                    className: "timebar",
+                  children: [
+                    c.jsx("span", {
+                      className: "timebar-label",
+                      children: "🗓 Օրվա վիճակ",
+                    }),
+                    c.jsx("select", {
+                      className: "input select",
+                      value: ttYear,
+                      onChange: (S) => setTtYear(S.target.value),
+                      "aria-label": "Ուսումնական տարի",
+                      children: ACADEMIC_YEARS.map((S) =>
+                        c.jsx("option", { value: S, children: S }, S),
+                      ),
+                    }),
+                    c.jsx("select", {
+                      className: "input select",
+                      value: ttMonth,
+                      onChange: (S) => {
+                        const N = Number(S.target.value);
+                        (setTtMonth(N),
+                          Number(ttDay) > daysInMonthFor(ttYear, N) &&
+                            setTtDay(daysInMonthFor(ttYear, N)));
+                      },
+                      "aria-label": "Ամիս",
+                      children: MONTH_NAMES.map((S, N) =>
+                        c.jsx("option", { value: N + 1, children: S }, S),
+                      ),
+                    }),
+                    c.jsx("select", {
+                      className: "input select",
+                      value: ttDay,
+                      onChange: (S) => setTtDay(S.target.value),
+                      "aria-label": "Օր",
+                      children: Array.from(
+                        { length: daysInMonthFor(ttYear, Number(ttMonth)) },
+                        (S, N) => N + 1,
+                      ).map((S) => c.jsx("option", { value: S, children: S }, S)),
+                    }),
+                    c.jsx("button", {
+                      type: "button",
+                      className: "btn btn-outline btn-small",
+                      onClick: () => {
+                        const S = Number(ttMonth),
+                          N = Math.min(Number(ttDay), daysInMonthFor(ttYear, S));
+                        (setTtDay(N),
+                          setAsOf({
+                            year: ttYear,
+                            month: S,
+                            day: N,
+                            key: snapshotKey(ttYear, S, N),
+                          }));
+                      },
+                      children: "Ցույց տալ",
+                    }),
+                    asOf &&
+                      c.jsxs("span", {
+                        className: "chip snapshot-chip",
+                        children: [
+                          "Օրվա վիճակ՝ ",
+                          datePartsLabel(asOf.year, asOf.month, asOf.day),
+                          c.jsx("button", {
+                            type: "button",
+                            className: "snapshot-clear",
+                            title: "Ցույց տալ ընթացիկ վիճակը",
+                            onClick: () => setAsOf(null),
+                            children: "✕",
+                          }),
+                        ],
+                      }),
                   ],
                 }),
                 c.jsx(Vg, {
-                  classes: t,
+                  classes: asOfClasses,
                   onSelect: (S) => i({ view: "classes", id: S }),
                   onEdit: isClosed("classes")
                     ? null
@@ -3127,6 +3363,7 @@ function F0() {
               onEditProject: up,
               onPromote: dp,
               busy: F,
+              asOfSnapshot: asOf,
             }),
           s.view === "section" &&
             au &&
@@ -3272,6 +3509,77 @@ function F0() {
                       "Դասարանը կկոչվի՝ ",
                       c.jsxs("strong", { children: [d, m] }),
                     ],
+                  }),
+                  c.jsxs("div", {
+                    className: "field-row field-row-3",
+                    children: [
+                      c.jsxs("label", {
+                        className: "field",
+                        children: [
+                          "Ուսումնական տարի",
+                          c.jsx("select", {
+                            className: "input",
+                            value: acYear,
+                            onChange: (S) => {
+                              const N = S.target.value;
+                              (setAcYear(N),
+                                Number(acDay) >
+                                  daysInMonthFor(N, Number(acMonth)) &&
+                                  setAcDay(daysInMonthFor(N, Number(acMonth))));
+                            },
+                            children: ACADEMIC_YEARS.map((S) =>
+                              c.jsx("option", { value: S, children: S }, S),
+                            ),
+                          }),
+                        ],
+                      }),
+                      c.jsxs("label", {
+                        className: "field",
+                        children: [
+                          "Ամիս",
+                          c.jsx("select", {
+                            className: "input",
+                            value: acMonth,
+                            onChange: (S) => {
+                              const N = Number(S.target.value);
+                              (setAcMonth(N),
+                                Number(acDay) > daysInMonthFor(acYear, N) &&
+                                  setAcDay(daysInMonthFor(acYear, N)));
+                            },
+                            children: MONTH_NAMES.map((S, N) =>
+                              c.jsx("option", { value: N + 1, children: S }, S),
+                            ),
+                          }),
+                        ],
+                      }),
+                      c.jsxs("label", {
+                        className: "field",
+                        children: [
+                          "Օր",
+                          c.jsx("select", {
+                            className: "input",
+                            value: acDay,
+                            onChange: (S) => setAcDay(S.target.value),
+                            children: Array.from(
+                              {
+                                length: daysInMonthFor(
+                                  acYear,
+                                  Number(acMonth),
+                                ),
+                              },
+                              (S, N) => N + 1,
+                            ).map((S) =>
+                              c.jsx("option", { value: S, children: S }, S),
+                            ),
+                          }),
+                        ],
+                      }),
+                    ],
+                  }),
+                  c.jsx("p", {
+                    className: "field-hint",
+                    children:
+                      "Այս ամսաթիվով հետագայում կտեսնեք, թե դասարանն ինչ տեսք ուներ այդ օրը։",
                   }),
                   c.jsxs("label", {
                     className: "field",
